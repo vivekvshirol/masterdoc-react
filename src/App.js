@@ -6,8 +6,8 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tYXRsZ3Bjdmh2Z2VxaWF6dXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNzg2NjUsImV4cCI6MjA5Mjk1NDY2NX0._nEy0wPP_mRcjPUO9v6oBBhdcCRYERwC8sDULwTUjcI"
 );
 
-// ── Only this email can log in ──
-const ADMIN_EMAIL = "vivekvshirol@gmail.com"; // ← CHANGE THIS to Dr. Vivek's actual email
+// ── CHANGE THIS to Dr. Vivek's actual Supabase login email ──
+const ADMIN_EMAIL = "vivekvshirol@gmail.com";
 
 const s = {
   app: {
@@ -73,30 +73,6 @@ const s = {
     marginTop: 6,
     fontFamily: "'Georgia', serif",
   },
-  btnOutline: {
-    width: "100%",
-    background: "transparent",
-    color: "#c9a84c",
-    border: "1px solid #c9a84c60",
-    padding: 12,
-    borderRadius: 12,
-    fontSize: 14,
-    fontWeight: "bold",
-    cursor: "pointer",
-    marginTop: 8,
-    fontFamily: "'Georgia', serif",
-  },
-  btnSmall: (color) => ({
-    background: color + "20",
-    color: color,
-    border: `1px solid ${color}50`,
-    padding: "8px 14px",
-    borderRadius: 10,
-    fontSize: 12,
-    fontWeight: "bold",
-    cursor: "pointer",
-    fontFamily: "'Georgia', serif",
-  }),
   badge: (color) => ({
     background: color + "20",
     color: color,
@@ -135,11 +111,10 @@ const s = {
   }),
 };
 
-// ── Star Rating Display ──
 const Stars = ({ rating }) => (
   <span>
-    {[1, 2, 3, 4, 5].map((s) => (
-      <span key={s} style={{ color: s <= rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>
+    {[1, 2, 3, 4, 5].map((n) => (
+      <span key={n} style={{ color: n <= rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>
     ))}
   </span>
 );
@@ -174,7 +149,7 @@ export default function MasterDoc() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // ── Load seen map from localStorage ──
+  // ── Load seen map ──
   useEffect(() => {
     const saved = localStorage.getItem("masterdoc_seen");
     if (saved) setSeenMap(JSON.parse(saved));
@@ -210,7 +185,6 @@ export default function MasterDoc() {
     setUser(null);
   };
 
-  // ── Fetch appointments ──
   const fetchAppointments = useCallback(async () => {
     setDataLoading(true);
     const { data } = await supabase
@@ -221,7 +195,6 @@ export default function MasterDoc() {
     setDataLoading(false);
   }, []);
 
-  // ── Fetch unique patients from appointments ──
   const fetchPatients = useCallback(async () => {
     setDataLoading(true);
     const { data } = await supabase
@@ -229,7 +202,6 @@ export default function MasterDoc() {
       .select("patient_name, phone")
       .order("created_at", { ascending: false });
     if (data) {
-      // Deduplicate by phone number
       const seen = new Set();
       const unique = data.filter((p) => {
         if (seen.has(p.phone)) return false;
@@ -246,54 +218,11 @@ export default function MasterDoc() {
     if (user && screen === "patients") fetchPatients();
   }, [user, screen, fetchAppointments, fetchPatients]);
 
-  // ── Load patient detail data ──
-  const loadPatientData = async (phone) => {
-    setPatientLoading(true);
-
-    // Get all appointments for this phone → get symptom_logs via user_id if available
-    const { data: appts } = await supabase
-      .from("appointments")
-      .select("*")
-      .eq("phone", phone)
-      .order("created_at", { ascending: false });
-
-    // Get symptom logs — join via appointments (no direct user_id on appointments)
-    // We'll show symptoms from the appointments table itself as well as symptom_logs
-    setPatientSymptoms(appts || []);
-
-    // For feedback and bristol — we need user_id
-    // Get from symptom_logs first to find user_id
-    const { data: symLogs } = await supabase
-      .from("symptom_logs")
-      .select("user_id")
-      .limit(1);
-
-    // Try to get feedback by matching name from appointments
-    const { data: allFeedback } = await supabase
-      .from("feedback")
-      .select("*")
-      .order("submitted_at", { ascending: false });
-
-    setPatientFeedback(allFeedback || []);
-
-    // Bristol logs — get all, we'll show general recent ones
-    const { data: bristolData } = await supabase
-      .from("bristol_logs")
-      .select("*")
-      .order("logged_at", { ascending: false })
-      .limit(50);
-
-    setPatientBristol(bristolData || []);
-    setPatientLoading(false);
-  };
-
-  // ── Better patient data: load by matching user from profiles ──
   const loadPatientDataByPhone = async (patient) => {
     setPatientLoading(true);
     setSelectedPatient(patient);
     setPatientTab("symptoms");
 
-    // Get all appointments for this patient
     const { data: appts } = await supabase
       .from("appointments")
       .select("*")
@@ -301,9 +230,6 @@ export default function MasterDoc() {
       .order("created_at", { ascending: false });
     setPatientSymptoms(appts || []);
 
-    // Get symptom_logs — try to find by matching name in patient_profiles
-    // Since appointments don't store user_id, we match via phone in symptom_logs indirectly
-    // Best approach: get all feedback and bristol, show all (doctor sees all patients' data)
     const { data: feedbackData } = await supabase
       .from("feedback")
       .select("*")
@@ -362,7 +288,7 @@ export default function MasterDoc() {
             {authLoading ? "Signing in..." : "🔐 Sign In to MasterDoc"}
           </button>
           <div style={{ ...s.card, marginTop: 24, textAlign: "center" }}>
-            <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>🔒 This portal is exclusively for Dr. Vivek Shirol. Unauthorised access is not permitted.</p>
+            <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>🔒 This portal is exclusively for Dr. Vivek Shirol.</p>
           </div>
         </div>
       </div>
@@ -381,13 +307,11 @@ export default function MasterDoc() {
           <button style={{ background: "none", border: "none", color: "#c9a84c", cursor: "pointer", fontSize: 13 }} onClick={() => setSelectedPatient(null)}>← Back</button>
         </div>
         <div style={s.page}>
-          {/* Patient Header */}
           <div style={{ ...s.card, borderLeft: "3px solid #c9a84c", marginBottom: 16 }}>
             <p style={{ color: "#c9a84c", fontWeight: "bold", fontSize: 16, margin: "0 0 4px" }}>👤 {selectedPatient.patient_name}</p>
             <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>📞 {selectedPatient.phone}</p>
           </div>
 
-          {/* Tab Buttons */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {[
               { id: "symptoms", label: "🩺 Symptoms", color: "#00c9a7" },
@@ -417,7 +341,7 @@ export default function MasterDoc() {
           {/* SYMPTOMS TAB */}
           {patientTab === "symptoms" && !patientLoading && (
             <>
-              <p style={{ color: "#7fa8c9", fontSize: 11, fontWeight: "bold", marginBottom: 10 }}>APPOINTMENT HISTORY & SYMPTOMS</p>
+              <p style={{ color: "#7fa8c9", fontSize: 11, fontWeight: "bold", marginBottom: 10 }}>APPOINTMENT HISTORY</p>
               {patientSymptoms.length === 0 && <p style={{ color: "#7fa8c9" }}>No appointments found.</p>}
               {patientSymptoms.map((appt, i) => (
                 <div key={i} style={{ ...s.card, borderLeft: "3px solid #00c9a7" }}>
@@ -427,7 +351,7 @@ export default function MasterDoc() {
                   </div>
                   <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 4px" }}>👤 {appt.patient_name}</p>
                   <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>
-                    Booked: {new Date(appt.created_at).toLocaleDateString()} at {new Date(appt.created_at).toLocaleTimeString()}
+                    Booked: {new Date(appt.created_at).toLocaleDateString()}
                   </p>
                 </div>
               ))}
@@ -494,15 +418,13 @@ export default function MasterDoc() {
         <button style={{ background: "none", border: "none", color: "#7fa8c9", cursor: "pointer", fontSize: 12 }} onClick={handleLogout}>Sign Out</button>
       </div>
 
-      {/* ── APPOINTMENTS SCREEN ── */}
+      {/* APPOINTMENTS */}
       {screen === "appointments" && (
         <div style={s.page}>
           <h2 style={s.title}>📅 Appointments</h2>
           <p style={s.subtitle}>Tap ✅ to mark as seen · Sorted by date</p>
+          {dataLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
 
-          {dataLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading appointments...</p>}
-
-          {/* Pending */}
           <p style={{ color: "#ef4444", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>🔴 PENDING</p>
           {appointments.filter(a => !seenMap[a.id]).length === 0 && (
             <div style={{ ...s.card, textAlign: "center" }}>
@@ -519,17 +441,12 @@ export default function MasterDoc() {
                   <span style={s.badge("#c9a84c")}>{appt.visit_type}</span>
                 </div>
                 <button style={{ background: "#00c9a720", color: "#00c9a7", border: "1px solid #00c9a750", padding: "8px 12px", borderRadius: 10, fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "'Georgia', serif", flexShrink: 0 }}
-                  onClick={() => markSeen(appt.id)}>
-                  ✅ Mark Seen
-                </button>
+                  onClick={() => markSeen(appt.id)}>✅ Mark Seen</button>
               </div>
-              <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>
-                Booked: {new Date(appt.created_at).toLocaleDateString()}
-              </p>
+              <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>Booked: {new Date(appt.created_at).toLocaleDateString()}</p>
             </div>
           ))}
 
-          {/* Seen */}
           {appointments.filter(a => seenMap[a.id]).length > 0 && (
             <>
               <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", marginBottom: 10, marginTop: 16, letterSpacing: 1 }}>✅ SEEN</p>
@@ -542,9 +459,7 @@ export default function MasterDoc() {
                       <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📞 {appt.phone}</p>
                     </div>
                     <button style={{ background: "transparent", color: "#7fa8c9", border: "1px solid #1e3a5f", padding: "6px 10px", borderRadius: 10, fontSize: 11, cursor: "pointer", fontFamily: "'Georgia', serif" }}
-                      onClick={() => markUnseen(appt.id)}>
-                      Undo
-                    </button>
+                      onClick={() => markUnseen(appt.id)}>Undo</button>
                   </div>
                 </div>
               ))}
@@ -553,20 +468,17 @@ export default function MasterDoc() {
         </div>
       )}
 
-      {/* ── PATIENTS SCREEN ── */}
+      {/* PATIENTS */}
       {screen === "patients" && (
         <div style={s.page}>
           <h2 style={s.title}>👥 Patient Profiles</h2>
           <p style={s.subtitle}>Tap a patient to view their full profile</p>
-
-          {dataLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading patients...</p>}
-
+          {dataLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
           {patients.length === 0 && !dataLoading && (
             <div style={{ ...s.card, textAlign: "center" }}>
               <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No patients found yet.</p>
             </div>
           )}
-
           {patients.map((p, i) => (
             <div key={i} style={{ ...s.card, borderLeft: "3px solid #c9a84c", cursor: "pointer" }}
               onClick={() => loadPatientDataByPhone(p)}>
@@ -582,7 +494,7 @@ export default function MasterDoc() {
         </div>
       )}
 
-      {/* ── STATS SCREEN ── */}
+      {/* STATS */}
       {screen === "stats" && (
         <div style={s.page}>
           <h2 style={s.title}>📊 Quick Stats</h2>
@@ -613,7 +525,7 @@ export default function MasterDoc() {
                     <span style={{ color: "#c9a84c", fontSize: 12, fontWeight: "bold" }}>{count}</span>
                   </div>
                   <div style={{ background: "#1e3a5f", borderRadius: 4, height: 6 }}>
-                    <div style={{ background: "#c9a84c", width: pct + "%", height: "100%", borderRadius: 4, transition: "width 0.5s" }} />
+                    <div style={{ background: "#c9a84c", width: pct + "%", height: "100%", borderRadius: 4 }} />
                   </div>
                 </div>
               );
@@ -623,7 +535,6 @@ export default function MasterDoc() {
         </div>
       )}
 
-      {/* Bottom Nav */}
       <div style={s.bottomNav}>
         {navScreens.map(n => (
           <button key={n.id} style={s.bottomBtn(screen === n.id)} onClick={() => setScreen(n.id)}>
