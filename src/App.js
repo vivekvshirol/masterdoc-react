@@ -209,7 +209,7 @@ export default function MasterDoc() {
   // ── Fetch all appointments ──
   const fetchAppointments = useCallback(async () => {
     setDataLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("appointments")
       .select("*")
       .order("date", { ascending: true });
@@ -220,7 +220,7 @@ export default function MasterDoc() {
   // ── FIX #3: Fetch unique patients from appointments ──
   const fetchPatients = useCallback(async () => {
     setDataLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("appointments")
       .select("patient_name, phone, user_id")
       .order("created_at", { ascending: false });
