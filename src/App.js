@@ -127,32 +127,33 @@ export default function MasterDoc() {
 
   const [screen, setScreen] = useState("appointments");
 
-  // ── Appointments ──
+  // Appointments
   const [appointments, setAppointments] = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // ── FIX #2: seenIds stored as plain array in state, Set only for lookups ──
-  const [seenIdsArr, setSeenIdsArr] = useState([]);
+  // SEEN IDS — stored as array of strings, compared strictly as strings
+  const [seenIds, setSeenIds] = useState([]);
 
-  // ── Selected appointment detail ──
+  // Selected appointment detail
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [apptSymptoms, setApptSymptoms] = useState([]);
   const [apptDetailLoading, setApptDetailLoading] = useState(false);
 
-  // ── Patients ──
+  // Patients
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [patientTab, setPatientTab] = useState("symptoms");
+  const [patientTab, setPatientTab] = useState("complaints");
   const [patientAppts, setPatientAppts] = useState([]);
   const [patientBristol, setPatientBristol] = useState([]);
   const [patientSymptomLogs, setPatientSymptomLogs] = useState([]);
+  const [patientFeedback, setPatientFeedback] = useState([]);
   const [patientLoading, setPatientLoading] = useState(false);
 
-  // ── Feedback ──
+  // Feedback
   const [allFeedback, setAllFeedback] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
 
-  // ── Auth ──
+  // Auth
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email === ADMIN_EMAIL) setUser(session.user);
@@ -164,29 +165,32 @@ export default function MasterDoc() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // ── FIX #2: Load seen IDs as array from localStorage ──
+  // Load seen IDs from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("masterdoc_seen_v3");
-    if (saved) {
-      try { setSeenIdsArr(JSON.parse(saved)); } catch { setSeenIdsArr([]); }
-    }
+    try {
+      const saved = localStorage.getItem("masterdoc_seen_v4");
+      if (saved) setSeenIds(JSON.parse(saved));
+    } catch { setSeenIds([]); }
   }, []);
 
-  const isSeen = (id) => seenIdsArr.includes(id);
+  // ISSUE 2 FIX: compare strictly as strings — UUIDs from Supabase are strings
+  const isSeen = (id) => seenIds.includes(String(id));
 
   const markSeen = (e, id) => {
     e.stopPropagation();
-    if (seenIdsArr.includes(id)) return;
-    const updated = [...seenIdsArr, id];
-    setSeenIdsArr(updated);
-    localStorage.setItem("masterdoc_seen_v3", JSON.stringify(updated));
+    const sid = String(id);
+    if (seenIds.includes(sid)) return;
+    const updated = [...seenIds, sid];
+    setSeenIds(updated);
+    localStorage.setItem("masterdoc_seen_v4", JSON.stringify(updated));
   };
 
   const markUnseen = (e, id) => {
     e.stopPropagation();
-    const updated = seenIdsArr.filter((x) => x !== id);
-    setSeenIdsArr(updated);
-    localStorage.setItem("masterdoc_seen_v3", JSON.stringify(updated));
+    const sid = String(id);
+    const updated = seenIds.filter((x) => x !== sid);
+    setSeenIds(updated);
+    localStorage.setItem("masterdoc_seen_v4", JSON.stringify(updated));
   };
 
   const handleLogin = async () => {
@@ -206,41 +210,79 @@ export default function MasterDoc() {
     setUser(null);
   };
 
-  // ── Fetch all appointments ──
+  // Fetch appointments
   const fetchAppointments = useCallback(async () => {
     setDataLoading(true);
     const { data } = await supabase
       .from("appointments")
       .select("*")
-      .order("date", { ascending: true });
+      .order("created_at", { ascending: false });
     if (data) setAppointments(data);
     setDataLoading(false);
   }, []);
 
-  // ── FIX #3: Fetch unique patients from appointments ──
+  // ISSUE 1 FIX: Fetch patients — try patient_profiles first, fallback to appointments
   const fetchPatients = useCallback(async () => {
     setDataLoading(true);
-    const { data } = await supabase
+
+    // Try patient_profiles table first (registered GastroDoc users)
+    const { data: profiles } = await supabase
+      .from("patient_profiles")
+      .select("*");
+
+    // Also get appointments for name/phone enrichment
+    const { data: appts } = await supabase
       .from("appointments")
       .select("patient_name, phone, user_id")
       .order("created_at", { ascending: false });
 
-    if (data) {
-      const seenPhones = new Set();
+    if (profiles && profiles.length > 0) {
+      // Build from profiles, enrich with appointment data
+      const enriched = profiles.map((profile) => {
+        const matchAppt = appts
+          ? appts.find((a) => a.user_id === profile.user_id)
+          : null;
+        return {
+          user_id: profile.user_id,
+          patient_name:
+            matchAppt?.patient_name ||
+            profile.full_name ||
+            profile.name ||
+            profile.display_name ||
+            "Unknown Patient",
+          phone:
+            matchAppt?.phone ||
+            profile.phone ||
+            profile.mobile ||
+            "—",
+          email: profile.email || "",
+        };
+      });
+      setPatients(enriched);
+    } else if (appts && appts.length > 0) {
+      // Fallback: derive unique patients directly from appointments table
+      const seen = new Set();
       const unique = [];
-      for (const p of data) {
-        const key = p.phone || p.user_id || p.patient_name;
-        if (!seenPhones.has(key)) {
-          seenPhones.add(key);
-          unique.push(p);
+      for (const a of appts) {
+        const key = String(a.phone || a.user_id || a.patient_name || "");
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          unique.push({
+            user_id: a.user_id || null,
+            patient_name: a.patient_name || "Unknown",
+            phone: a.phone || "—",
+          });
         }
       }
       setPatients(unique);
+    } else {
+      setPatients([]);
     }
+
     setDataLoading(false);
   }, []);
 
-  // ── FIX #4: Fetch all feedback with correct patient names ──
+  // ISSUE 3 FIX: Fetch feedback with name from patient_profiles first, then appointments
   const fetchAllFeedback = useCallback(async () => {
     setFeedbackLoading(true);
 
@@ -249,30 +291,58 @@ export default function MasterDoc() {
       .select("*")
       .order("submitted_at", { ascending: false });
 
-    if (!fbData) { setFeedbackLoading(false); return; }
+    if (!fbData || fbData.length === 0) {
+      setAllFeedback([]);
+      setFeedbackLoading(false);
+      return;
+    }
 
-    // Fetch all appointments once for name lookup
+    // Get patient_profiles for the most reliable name lookup
+    const { data: profiles } = await supabase
+      .from("patient_profiles")
+      .select("user_id, full_name, name, display_name, phone, email");
+
+    // Get appointments as fallback name source
     const { data: allAppts } = await supabase
       .from("appointments")
       .select("patient_name, phone, user_id");
 
     const enriched = fbData.map((fb) => {
-      let patientName = "Anonymous Patient";
+      let patientName = null;
 
-      if (allAppts) {
-        // Match by user_id if available
-        if (fb.user_id) {
-          const match = allAppts.find((a) => a.user_id === fb.user_id);
-          if (match) patientName = match.patient_name;
-        }
-        // Fallback: match by phone if feedback has phone field
-        if (patientName === "Anonymous Patient" && fb.phone) {
-          const match = allAppts.find((a) => a.phone === fb.phone);
-          if (match) patientName = match.patient_name;
+      // 1. Match via patient_profiles by user_id (most reliable)
+      if (profiles && fb.user_id) {
+        const profile = profiles.find((p) => p.user_id === fb.user_id);
+        if (profile) {
+          patientName =
+            profile.full_name ||
+            profile.name ||
+            profile.display_name ||
+            null;
         }
       }
 
-      return { ...fb, patientName };
+      // 2. Match via appointments by user_id
+      if (!patientName && allAppts && fb.user_id) {
+        const appt = allAppts.find((a) => a.user_id === fb.user_id);
+        if (appt) patientName = appt.patient_name;
+      }
+
+      // 3. Match via appointments by phone
+      if (!patientName && allAppts && fb.phone) {
+        const appt = allAppts.find((a) => a.phone === fb.phone);
+        if (appt) patientName = appt.patient_name;
+      }
+
+      // 4. Match via profiles by phone
+      if (!patientName && profiles && fb.phone) {
+        const profile = profiles.find((p) => p.phone === fb.phone);
+        if (profile) {
+          patientName = profile.full_name || profile.name || null;
+        }
+      }
+
+      return { ...fb, patientName: patientName || "Patient" };
     });
 
     setAllFeedback(enriched);
@@ -287,13 +357,11 @@ export default function MasterDoc() {
     if (screen === "stats") { fetchAppointments(); fetchPatients(); }
   }, [user, screen, fetchAppointments, fetchPatients, fetchAllFeedback]);
 
-  // ── FIX #1: Open appointment detail — fetch complaints & symptoms properly ──
+  // Open appointment detail
   const openApptDetail = async (appt) => {
     setSelectedAppt(appt);
     setApptSymptoms([]);
     setApptDetailLoading(true);
-
-    // Try to get symptom logs for this patient by user_id
     let symptoms = [];
     if (appt.user_id) {
       const { data } = await supabase
@@ -303,39 +371,38 @@ export default function MasterDoc() {
         .order("logged_at", { ascending: false });
       if (data) symptoms = data;
     }
-
-    // If no user_id match, fallback to recent logs (generic)
-    if (symptoms.length === 0) {
-      const { data } = await supabase
-        .from("symptom_logs")
-        .select("*")
-        .order("logged_at", { ascending: false })
-        .limit(10);
-      if (data) symptoms = data;
-    }
-
     setApptSymptoms(symptoms);
     setApptDetailLoading(false);
   };
 
-  // ── FIX #3: Open patient profile — fetch all relevant data ──
+  // Open patient profile
   const openPatient = async (patient) => {
     setPatientLoading(true);
     setSelectedPatient(patient);
-    setPatientTab("symptoms");
+    setPatientTab("complaints");
     setPatientAppts([]);
     setPatientBristol([]);
     setPatientSymptomLogs([]);
+    setPatientFeedback([]);
 
-    // All appointments for this patient by phone
-    const { data: appts } = await supabase
-      .from("appointments")
-      .select("*")
-      .eq("phone", patient.phone)
-      .order("created_at", { ascending: false });
-    setPatientAppts(appts || []);
+    // Appointments: match by phone first, then user_id
+    if (patient.phone && patient.phone !== "—") {
+      const { data: appts } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("phone", patient.phone)
+        .order("created_at", { ascending: false });
+      setPatientAppts(appts || []);
+    } else if (patient.user_id) {
+      const { data: appts } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("user_id", patient.user_id)
+        .order("created_at", { ascending: false });
+      setPatientAppts(appts || []);
+    }
 
-    // Symptom logs by user_id (if available)
+    // Symptom logs, Bristol logs, Feedback — all by user_id
     if (patient.user_id) {
       const { data: symData } = await supabase
         .from("symptom_logs")
@@ -344,21 +411,19 @@ export default function MasterDoc() {
         .order("logged_at", { ascending: false });
       setPatientSymptomLogs(symData || []);
 
-      // Bristol logs by user_id
       const { data: bristolData } = await supabase
         .from("bristol_logs")
         .select("*")
         .eq("user_id", patient.user_id)
         .order("logged_at", { ascending: false });
       setPatientBristol(bristolData || []);
-    } else {
-      // Fallback: fetch all bristol logs if user_id not available
-      const { data: bristolData } = await supabase
-        .from("bristol_logs")
+
+      const { data: fbData } = await supabase
+        .from("feedback")
         .select("*")
-        .order("logged_at", { ascending: false })
-        .limit(20);
-      setPatientBristol(bristolData || []);
+        .eq("user_id", patient.user_id)
+        .order("submitted_at", { ascending: false });
+      setPatientFeedback(fbData || []);
     }
 
     setPatientLoading(false);
@@ -415,7 +480,7 @@ export default function MasterDoc() {
     );
   }
 
-  // ── APPOINTMENT DETAIL — FIX #1 ──
+  // ── APPOINTMENT DETAIL ──
   if (selectedAppt) {
     return (
       <div style={s.app}>
@@ -427,36 +492,29 @@ export default function MasterDoc() {
           <button style={{ background: "none", border: "none", color: "#c9a84c", cursor: "pointer", fontSize: 13 }} onClick={() => setSelectedAppt(null)}>← Back</button>
         </div>
         <div style={s.page}>
-
-          {/* Patient Info Card */}
           <div style={{ ...s.card, borderLeft: "3px solid #c9a84c", marginBottom: 16 }}>
             <p style={{ color: "#c9a84c", fontWeight: "bold", fontSize: 16, margin: "0 0 10px" }}>👤 {selectedAppt.patient_name}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>📞 {selectedAppt.phone}</p>
               <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>📅 Requested Date: <span style={{ color: "#e8f4f8", fontWeight: "bold" }}>{selectedAppt.date}</span></p>
               <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>🏥 Visit Type: <span style={{ color: "#c9a84c" }}>{selectedAppt.visit_type}</span></p>
-              <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>🕐 Booked on: {new Date(selectedAppt.created_at).toLocaleDateString()} at {new Date(selectedAppt.created_at).toLocaleTimeString()}</p>
+              <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>🕐 Booked: {new Date(selectedAppt.created_at).toLocaleDateString()} at {new Date(selectedAppt.created_at).toLocaleTimeString()}</p>
             </div>
           </div>
 
-          {/* Complaints / Reason for visit from appointment itself */}
-          {selectedAppt.complaints || selectedAppt.reason || selectedAppt.notes ? (
-            <div style={{ ...s.card, borderLeft: "3px solid #f59e0b", marginBottom: 16 }}>
-              <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: "bold", margin: "0 0 8px", letterSpacing: 1 }}>📝 COMPLAINTS / REASON FOR VISIT</p>
+          <div style={{ ...s.card, borderLeft: "3px solid #f59e0b", marginBottom: 16 }}>
+            <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: "bold", margin: "0 0 8px", letterSpacing: 1 }}>📝 COMPLAINTS / REASON FOR VISIT</p>
+            {selectedAppt.complaints || selectedAppt.reason || selectedAppt.notes ? (
               <p style={{ color: "#e8f4f8", fontSize: 14, margin: 0, lineHeight: 1.6 }}>
                 {selectedAppt.complaints || selectedAppt.reason || selectedAppt.notes}
               </p>
-            </div>
-          ) : (
-            <div style={{ ...s.card, borderLeft: "3px solid #f59e0b", marginBottom: 16 }}>
-              <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: "bold", margin: "0 0 8px", letterSpacing: 1 }}>📝 COMPLAINTS / REASON FOR VISIT</p>
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No complaint text recorded in this appointment.</p>
-            </div>
-          )}
+            ) : (
+              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No complaint text recorded for this appointment.</p>
+            )}
+          </div>
 
-          {/* Symptom Logs for this patient */}
           <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>🩺 SYMPTOM LOGS</p>
-          {apptDetailLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading symptoms...</p>}
+          {apptDetailLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
           {!apptDetailLoading && apptSymptoms.length === 0 && (
             <div style={{ ...s.card, textAlign: "center" }}>
               <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptom logs found for this patient.</p>
@@ -472,9 +530,7 @@ export default function MasterDoc() {
                   <span key={j} style={{ background: "#00c9a720", color: "#00c9a7", fontSize: 11, padding: "3px 10px", borderRadius: 20, border: "1px solid #00c9a740" }}>{sym}</span>
                 ))}
               </div>
-              {log.notes && (
-                <p style={{ color: "#e8f4f8", fontSize: 12, margin: "8px 0 0", fontStyle: "italic" }}>{log.notes}</p>
-              )}
+              {log.notes && <p style={{ color: "#e8f4f8", fontSize: 12, margin: "8px 0 0", fontStyle: "italic" }}>{log.notes}</p>}
             </div>
           ))}
         </div>
@@ -482,8 +538,14 @@ export default function MasterDoc() {
     );
   }
 
-  // ── PATIENT PROFILE — FIX #3 ──
+  // ── PATIENT PROFILE ──
   if (selectedPatient) {
+    const tabs = [
+      { id: "complaints", label: "📝 Complaints", color: "#f59e0b" },
+      { id: "bristol", label: "💧 Bristol", color: "#3b82f6" },
+      { id: "feedback", label: "⭐ Feedback", color: "#c9a84c" },
+    ];
+
     return (
       <div style={s.app}>
         <div style={s.navbar}>
@@ -495,17 +557,17 @@ export default function MasterDoc() {
         </div>
         <div style={s.page}>
           <div style={{ ...s.card, borderLeft: "3px solid #c9a84c", marginBottom: 16 }}>
-            <p style={{ color: "#c9a84c", fontWeight: "bold", fontSize: 16, margin: "0 0 4px" }}>👤 {selectedPatient.patient_name}</p>
-            <p style={{ color: "#7fa8c9", fontSize: 13, margin: "0 0 2px" }}>📞 {selectedPatient.phone}</p>
-            <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>Total Appointments: <span style={{ color: "#c9a84c", fontWeight: "bold" }}>{patientAppts.length}</span></p>
+            <p style={{ color: "#c9a84c", fontWeight: "bold", fontSize: 16, margin: "0 0 6px" }}>👤 {selectedPatient.patient_name}</p>
+            <p style={{ color: "#7fa8c9", fontSize: 13, margin: "0 0 6px" }}>📞 {selectedPatient.phone}</p>
+            <div style={{ display: "flex", gap: 16 }}>
+              <span style={{ color: "#7fa8c9", fontSize: 12 }}>Appts: <span style={{ color: "#c9a84c", fontWeight: "bold" }}>{patientAppts.length}</span></span>
+              <span style={{ color: "#7fa8c9", fontSize: 12 }}>Symptoms: <span style={{ color: "#00c9a7", fontWeight: "bold" }}>{patientSymptomLogs.length}</span></span>
+              <span style={{ color: "#7fa8c9", fontSize: 12 }}>Bristol: <span style={{ color: "#3b82f6", fontWeight: "bold" }}>{patientBristol.length}</span></span>
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            {[
-              { id: "symptoms", label: "🩺 Symptoms", color: "#00c9a7" },
-              { id: "bristol", label: "💧 Bristol", color: "#3b82f6" },
-              { id: "appointments", label: "📅 Appts", color: "#c9a84c" },
-            ].map(tab => (
+            {tabs.map(tab => (
               <button key={tab.id} onClick={() => setPatientTab(tab.id)}
                 style={{
                   flex: 1,
@@ -526,40 +588,60 @@ export default function MasterDoc() {
 
           {patientLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
 
-          {/* SYMPTOMS TAB */}
-          {patientTab === "symptoms" && !patientLoading && (
+          {/* COMPLAINTS TAB */}
+          {patientTab === "complaints" && !patientLoading && (
             <>
-              <p style={{ color: "#7fa8c9", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>SYMPTOM LOGS</p>
-              {patientSymptomLogs.length === 0 && (
+              <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>APPOINTMENT COMPLAINTS</p>
+              {patientAppts.length === 0 && patientSymptomLogs.length === 0 && (
                 <div style={{ ...s.card, textAlign: "center" }}>
-                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptom logs found for this patient.</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No complaints or appointments found.</p>
                 </div>
               )}
-              {patientSymptomLogs.map((log, i) => (
-                <div key={i} style={{ ...s.card, borderLeft: "3px solid #00c9a7" }}>
-                  <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", margin: "0 0 8px" }}>
-                    {new Date(log.logged_at).toLocaleDateString()} at {new Date(log.logged_at).toLocaleTimeString()}
-                  </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {(log.symptoms || []).map((sym, j) => (
-                      <span key={j} style={{ background: "#00c9a720", color: "#00c9a7", fontSize: 11, padding: "3px 10px", borderRadius: 20, border: "1px solid #00c9a740" }}>{sym}</span>
-                    ))}
+              {patientAppts.map((appt, i) => (
+                <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={s.badge("#c9a84c")}>{appt.visit_type}</span>
+                    <span style={{ color: "#7fa8c9", fontSize: 11 }}>📅 {appt.date}</span>
                   </div>
-                  {log.notes && (
-                    <p style={{ color: "#e8f4f8", fontSize: 12, margin: "8px 0 0", fontStyle: "italic" }}>{log.notes}</p>
+                  {(appt.complaints || appt.reason || appt.notes) ? (
+                    <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5 }}>
+                      📝 {appt.complaints || appt.reason || appt.notes}
+                    </p>
+                  ) : (
+                    <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 6px" }}>No complaint text for this visit.</p>
                   )}
+                  <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Booked: {new Date(appt.created_at).toLocaleDateString()}</p>
                 </div>
               ))}
+
+              {patientSymptomLogs.length > 0 && (
+                <>
+                  <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", margin: "16px 0 10px", letterSpacing: 1 }}>🩺 SYMPTOM LOGS</p>
+                  {patientSymptomLogs.map((log, i) => (
+                    <div key={i} style={{ ...s.card, borderLeft: "3px solid #00c9a7" }}>
+                      <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", margin: "0 0 8px" }}>
+                        {new Date(log.logged_at).toLocaleDateString()} at {new Date(log.logged_at).toLocaleTimeString()}
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {(log.symptoms || []).map((sym, j) => (
+                          <span key={j} style={{ background: "#00c9a720", color: "#00c9a7", fontSize: 11, padding: "3px 10px", borderRadius: 20, border: "1px solid #00c9a740" }}>{sym}</span>
+                        ))}
+                      </div>
+                      {log.notes && <p style={{ color: "#e8f4f8", fontSize: 12, margin: "8px 0 0", fontStyle: "italic" }}>{log.notes}</p>}
+                    </div>
+                  ))}
+                </>
+              )}
             </>
           )}
 
           {/* BRISTOL TAB */}
           {patientTab === "bristol" && !patientLoading && (
             <>
-              <p style={{ color: "#7fa8c9", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>BRISTOL STOOL LOGS</p>
+              <p style={{ color: "#3b82f6", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>BRISTOL STOOL LOGS</p>
               {patientBristol.length === 0 && (
                 <div style={{ ...s.card, textAlign: "center" }}>
-                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No bristol logs found.</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No Bristol logs found for this patient.</p>
                 </div>
               )}
               {patientBristol.map((log, i) => {
@@ -581,29 +663,27 @@ export default function MasterDoc() {
             </>
           )}
 
-          {/* APPOINTMENTS TAB */}
-          {patientTab === "appointments" && !patientLoading && (
+          {/* FEEDBACK TAB */}
+          {patientTab === "feedback" && !patientLoading && (
             <>
-              <p style={{ color: "#7fa8c9", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>ALL APPOINTMENTS</p>
-              {patientAppts.length === 0 && (
+              <p style={{ color: "#c9a84c", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>⭐ FEEDBACK & RATINGS</p>
+              {patientFeedback.length === 0 && (
                 <div style={{ ...s.card, textAlign: "center" }}>
-                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No appointments found.</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No feedback submitted by this patient.</p>
                 </div>
               )}
-              {patientAppts.map((appt, i) => (
-                <div key={i} style={{ ...s.card, borderLeft: "3px solid #c9a84c" }}>
+              {patientFeedback.map((fb, i) => (
+                <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={s.badge("#c9a84c")}>{appt.visit_type}</span>
-                    <span style={{ color: "#7fa8c9", fontSize: 11 }}>📅 {appt.date}</span>
+                    <Stars rating={fb.rating} />
+                    <span style={{ color: "#7fa8c9", fontSize: 11 }}>{new Date(fb.submitted_at).toLocaleDateString()}</span>
                   </div>
-                  {(appt.complaints || appt.reason || appt.notes) && (
-                    <p style={{ color: "#e8f4f8", fontSize: 12, margin: "0 0 6px", lineHeight: 1.5 }}>
-                      📝 {appt.complaints || appt.reason || appt.notes}
-                    </p>
+                  <p style={{ color: "#c9a84c", fontSize: 12, margin: "0 0 6px" }}>Rating: {fb.rating}/5</p>
+                  {fb.message ? (
+                    <p style={{ color: "#e8f4f8", fontSize: 13, margin: "8px 0 0", lineHeight: 1.6, fontStyle: "italic", borderTop: "1px solid #1e3a5f", paddingTop: 8 }}>"{fb.message}"</p>
+                  ) : (
+                    <p style={{ color: "#7fa8c9", fontSize: 12, margin: "8px 0 0", borderTop: "1px solid #1e3a5f", paddingTop: 8 }}>No written message.</p>
                   )}
-                  <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>
-                    Booked: {new Date(appt.created_at).toLocaleDateString()} at {new Date(appt.created_at).toLocaleTimeString()}
-                  </p>
                 </div>
               ))}
             </>
@@ -624,7 +704,7 @@ export default function MasterDoc() {
         <button style={{ background: "none", border: "none", color: "#7fa8c9", cursor: "pointer", fontSize: 12 }} onClick={handleLogout}>Sign Out</button>
       </div>
 
-      {/* ── APPOINTMENTS ── */}
+      {/* APPOINTMENTS */}
       {screen === "appointments" && (
         <div style={s.page}>
           <h2 style={s.title}>📅 Appointments</h2>
@@ -681,20 +761,20 @@ export default function MasterDoc() {
               ))}
             </>
           )}
-
           <button style={{ ...s.btn, marginTop: 20 }} onClick={fetchAppointments}>🔄 Refresh</button>
         </div>
       )}
 
-      {/* ── PATIENTS ── */}
+      {/* PATIENTS */}
       {screen === "patients" && (
         <div style={s.page}>
           <h2 style={s.title}>👥 Patient Profiles</h2>
-          <p style={s.subtitle}>Tap a patient to view their full profile</p>
+          <p style={s.subtitle}>Tap a patient to view complaints, Bristol logs & feedback</p>
           {dataLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
           {patients.length === 0 && !dataLoading && (
             <div style={{ ...s.card, textAlign: "center" }}>
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No patients found yet.</p>
+              <p style={{ color: "#7fa8c9", fontSize: 13, margin: "0 0 8px" }}>No patients found.</p>
+              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Patients appear here once they book an appointment or register in GastroDoc.</p>
             </div>
           )}
           {patients.map((p, i) => (
@@ -714,7 +794,7 @@ export default function MasterDoc() {
         </div>
       )}
 
-      {/* ── FEEDBACK — FIX #4 ── */}
+      {/* FEEDBACK */}
       {screen === "feedback" && (
         <div style={s.page}>
           <h2 style={s.title}>⭐ Patient Feedback</h2>
@@ -746,7 +826,7 @@ export default function MasterDoc() {
         </div>
       )}
 
-      {/* ── STATS ── */}
+      {/* STATS */}
       {screen === "stats" && (
         <div style={s.page}>
           <h2 style={s.title}>📊 Quick Stats</h2>
@@ -754,7 +834,7 @@ export default function MasterDoc() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
             {[
               { label: "Total Appointments", value: appointments.length, color: "#c9a84c", icon: "📅" },
-              { label: "Seen", value: seenIdsArr.length, color: "#00c9a7", icon: "✅" },
+              { label: "Seen", value: seenIds.length, color: "#00c9a7", icon: "✅" },
               { label: "Pending", value: appointments.filter(a => !isSeen(a.id)).length, color: "#ef4444", icon: "🔴" },
               { label: "Unique Patients", value: patients.length, color: "#3b82f6", icon: "👥" },
             ].map((stat, i) => (
