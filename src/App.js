@@ -163,7 +163,7 @@ export default function App() {
 
   // ── Fetch appointments ────────────────────────────────────────────────────
   const fetchAppointments = useCallback(async () => {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("appointments")
     .select("patient_name, phone, date, visit_type, uuid, Created_at")
     .order("date", { ascending: false });
