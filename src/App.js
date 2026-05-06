@@ -8,6 +8,51 @@ const supabase = createClient(
 
 const DOCTOR_EMAIL = "vivekvshirol@gmail.com";
 
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+const getMonthKey = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  return `${d.getFullYear()}-${d.getMonth()}`;
+};
+
+const getMonthLabel = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+const getWeekOfMonth = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  const day = d.getDate();
+  return Math.ceil(day / 7);
+};
+
+const getWeekLabel = (week) => `Week ${week}`;
+
+const groupByMonthWeek = (items, getDate) => {
+  const months = {};
+  const undated = [];
+  items.forEach(item => {
+    const dateStr = getDate(item);
+    const monthKey = getMonthKey(dateStr);
+    if (!monthKey) { undated.push(item); return; }
+    const monthLabel = getMonthLabel(dateStr);
+    const week = getWeekOfMonth(dateStr);
+    if (!months[monthKey]) months[monthKey] = { label: monthLabel, key: monthKey, weeks: {}, count: 0 };
+    months[monthKey].count++;
+    if (!months[monthKey].weeks[week]) months[monthKey].weeks[week] = { items: [], count: 0 };
+    months[monthKey].weeks[week].items.push(item);
+    months[monthKey].weeks[week].count++;
+  });
+  const sorted = Object.values(months).sort((a, b) => b.key.localeCompare(a.key));
+  return { sorted, undated };
+};
+
 const s = {
   app: { background: "#0a1628", minHeight: "100vh", color: "#e8f4f8", fontFamily: "Arial, sans-serif", maxWidth: 500, margin: "0 auto", padding: "0 0 80px", position: "relative" },
   navbar: { background: "#0f2040", borderBottom: "2px solid #7c3aed", padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 20 },
@@ -20,12 +65,15 @@ const s = {
   label: { color: "#7fa8c9", fontSize: 11, marginBottom: 5, display: "block", textTransform: "uppercase", letterSpacing: 0.5 },
   btn: { width: "100%", background: "#7c3aed", color: "#fff", border: "none", padding: 14, borderRadius: 12, fontSize: 15, fontWeight: "bold", cursor: "pointer", marginTop: 6 },
   btnOutline: { width: "100%", background: "#1e3a5f", color: "#7c3aed", border: "1px solid #7c3aed40", padding: 13, borderRadius: 12, fontSize: 14, fontWeight: "bold", cursor: "pointer", marginTop: 8 },
-  btnBack: { width: "100%", background: "#0f2040", color: "#7fa8c9", border: "1px solid #1e3a5f", padding: 12, borderRadius: 12, fontSize: 14, cursor: "pointer", marginTop: 12 },
+  btnBack: { width: "100%", background: "#0f2040", color: "#7fa8c9", border: "1px solid #1e3a5f", padding: 12, borderRadius: 12, fontSize: 14, cursor: "pointer", marginTop: 12, marginBottom: 8 },
+  monthBtn: { width: "100%", background: "#132850", border: "1px solid #7c3aed40", borderRadius: 14, padding: "16px", marginBottom: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" },
+  weekBtn: { width: "100%", background: "#0f2040", border: "1px solid #1e3a5f", borderRadius: 12, padding: "14px 16px", marginBottom: 8, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" },
   bottomNav: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: "#0f2040", borderTop: "2px solid #7c3aed40", display: "flex", justifyContent: "space-around", padding: "8px 0", zIndex: 20 },
   bottomBtn: (active) => ({ background: "none", border: "none", cursor: "pointer", color: active ? "#7c3aed" : "#7fa8c9", fontSize: 9, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "3px 5px" }),
   badge: (color) => ({ background: color + "25", color, fontSize: 10, padding: "2px 8px", borderRadius: 20, display: "inline-block" }),
+  countBadge: { background: "#7c3aed", color: "#fff", fontSize: 12, fontWeight: "bold", padding: "3px 10px", borderRadius: 20 },
   seenBtn: (seen) => ({ background: seen ? "#00c9a720" : "#1e3a5f", color: seen ? "#00c9a7" : "#7fa8c9", border: seen ? "1px solid #00c9a740" : "1px solid #1e3a5f", borderRadius: 8, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }),
-  statCard: (color) => ({ background: "#132850", border: `1px solid ${color}40`, borderRadius: 14, padding: 16, flex: 1, textAlign: "center" }),
+  statCard: (color) => ({ background: "#132850", border: `1px solid ${color}40`, borderRadius: 14, padding: 16, textAlign: "center", marginBottom: 12 }),
 };
 
 const navTabs = [
@@ -44,17 +92,38 @@ const bristolLabel = (type) => {
 export default function App() {
   const [screen, setScreen] = useState("loading");
   const [activeTab, setActiveTab] = useState("appointments");
+
+  // Auth
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+
+  // Data
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [feedbackList, setFeedbackList] = useState([]);
-  const [stats, setStats] = useState({ appts: 0, patients: 0, feedback: 0, avgRating: 0 });
+  const [stats, setStats] = useState({ appts: 0, feedback: 0, avgRating: 0 });
+
+  // Navigation state for Month→Week→Items drill down
+  const [apptView, setApptView] = useState("months"); // months | weeks | items
+  const [apptMonth, setApptMonth] = useState(null);
+  const [apptWeek, setApptWeek] = useState(null);
+
+  const [patView, setPatView] = useState("months");
+  const [patMonth, setPatMonth] = useState(null);
+  const [patWeek, setPatWeek] = useState(null);
+
+  const [fbView, setFbView] = useState("months");
+  const [fbMonth, setFbMonth] = useState(null);
+  const [fbWeek, setFbWeek] = useState(null);
+
+  // Seen
   const [seenKeys, setSeenKeys] = useState(() => {
     try { return JSON.parse(localStorage.getItem("md_seen") || "[]"); } catch { return []; }
   });
+
+  // Detail screens
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [selectedApptSymptoms, setSelectedApptSymptoms] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -64,6 +133,8 @@ export default function App() {
   const [patientAppts, setPatientAppts] = useState([]);
   const [patientTab, setPatientTab] = useState("bristol");
   const [loadingPatient, setLoadingPatient] = useState(false);
+
+  // Settings
   const [settings, setSettings] = useState({
     doctor: "Dr. Vivek Shirol", quals: "MBBS, MD, DM Gastroenterology, SGPGI",
     clinic: "Dr. Vivek's Complete Gastro Care Clinic", address: "Belagavi, Karnataka",
@@ -94,20 +165,14 @@ export default function App() {
   };
   const toggleSeen = (a, e) => { e.stopPropagation(); isSeen(a) ? unmarkSeen(a) : markSeen(a); };
 
-  // ── Data fetchers ─────────────────────────────────────────────────────────
+  // ── Fetchers ──────────────────────────────────────────────────────────────
   const fetchAppointments = useCallback(async () => {
-    const { data } = await supabase
-      .from("appointments")
-      .select("patient_name, phone, date, visit_type, uuid, Created_at")
-      .order("date", { ascending: false });
+    const { data } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, uuid, Created_at").order("date", { ascending: false });
     if (data) setAppointments(data);
   }, []);
 
   const fetchPatients = useCallback(async () => {
-    const { data } = await supabase
-      .from("appointments")
-      .select("patient_name, phone, uuid")
-      .order("date", { ascending: false });
+    const { data } = await supabase.from("appointments").select("patient_name, phone, uuid, date, Created_at").order("date", { ascending: false });
     if (!data) return;
     const seen = new Set();
     const unique = [];
@@ -119,44 +184,39 @@ export default function App() {
   }, []);
 
   const fetchFeedback = useCallback(async () => {
-  const [{ data: fbData }, { data: profileData }, { data: apptUuidData }] = await Promise.all([
-    supabase.from("feedback").select("id, user_id, rating, message, submitted_at").order("submitted_at", { ascending: false }),
-    supabase.from("patient_profiles").select("user_id, phone"),
-    supabase.from("appointments").select("patient_name, phone, uuid"),
-  ]);
-  if (!fbData) return;
+    const [{ data: fbData }, { data: profileData }, { data: apptUuidData }] = await Promise.all([
+      supabase.from("feedback").select("id, user_id, rating, message, submitted_at").order("submitted_at", { ascending: false }),
+      supabase.from("patient_profiles").select("user_id, phone"),
+      supabase.from("appointments").select("patient_name, phone, uuid"),
+    ]);
+    if (!fbData) return;
+    const profileByUserId = {};
+    (profileData || []).forEach(p => { if (p.user_id) profileByUserId[p.user_id] = p.phone; });
+    const nameByPhone = {};
+    const nameByUuid = {};
+    (apptUuidData || []).forEach(a => {
+      if (a.phone && a.patient_name) nameByPhone[a.phone] = a.patient_name;
+      if (a.uuid && a.patient_name) nameByUuid[a.uuid] = a.patient_name;
+    });
+    const enriched = fbData.map(fb => {
+      let name = null;
+      if (fb.user_id && nameByUuid[fb.user_id]) name = nameByUuid[fb.user_id];
+      if (!name && fb.user_id && profileByUserId[fb.user_id]) name = nameByPhone[profileByUserId[fb.user_id]] || null;
+      return { ...fb, patient_name: name || "Unknown Patient" };
+    });
+    setFeedbackList(enriched);
+  }, []);
 
-  const profileByUserId = {};
-  (profileData || []).forEach(p => { if (p.user_id) profileByUserId[p.user_id] = p.phone; });
-
-  const nameByPhone = {};
-  const nameByUuid = {};
-  (apptUuidData || []).forEach(a => {
-    if (a.phone && a.patient_name) nameByPhone[a.phone] = a.patient_name;
-    if (a.uuid && a.patient_name) nameByUuid[a.uuid] = a.patient_name;
-  });
-
-  const enriched = fbData.map(fb => {
-    let name = null;
-    if (fb.user_id && nameByUuid[fb.user_id]) name = nameByUuid[fb.user_id];
-    if (!name && fb.user_id && profileByUserId[fb.user_id]) {
-      name = nameByPhone[profileByUserId[fb.user_id]] || null;
-    }
-    return { ...fb, patient_name: name || "Unknown Patient", created_at: fb.submitted_at };
-  });
-  setFeedbackList(enriched);
-}, []);
-
-const fetchStats = useCallback(async () => {
-  const [{ data: appts }, { data: fb }] = await Promise.all([
-    supabase.from("appointments").select("patient_name"),
-    supabase.from("feedback").select("rating"),
-  ]);
-  const apptCount = appts?.length || 0;
-  const fbCount = fb?.length || 0;
-  const avgRating = fbCount > 0 ? (fb.reduce((s, f) => s + (f.rating || 0), 0) / fbCount).toFixed(1) : "—";
-  setStats({ appts: apptCount, feedback: fbCount, avgRating });
-}, []);
+  const fetchStats = useCallback(async () => {
+    const [{ data: appts }, { data: fb }] = await Promise.all([
+      supabase.from("appointments").select("patient_name"),
+      supabase.from("feedback").select("rating"),
+    ]);
+    const apptCount = appts?.length || 0;
+    const fbCount = fb?.length || 0;
+    const avgRating = fbCount > 0 ? (fb.reduce((s, f) => s + (f.rating || 0), 0) / fbCount).toFixed(1) : "—";
+    setStats({ appts: apptCount, feedback: fbCount, avgRating });
+  }, []);
 
   const fetchSettings = useCallback(async () => {
     const { data } = await supabase.from("clinic_settings").select("key, value");
@@ -168,32 +228,19 @@ const fetchStats = useCallback(async () => {
   }, []);
 
   const loadAllData = useCallback(() => {
-    fetchAppointments();
-    fetchPatients();
-    fetchFeedback();
-    fetchStats();
-    fetchSettings();
+    fetchAppointments(); fetchPatients(); fetchFeedback(); fetchStats(); fetchSettings();
   }, [fetchAppointments, fetchPatients, fetchFeedback, fetchStats, fetchSettings]);
 
-  // ── Auth check on startup ─────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email === DOCTOR_EMAIL) {
-        setScreen("main");
-        loadAllData();
-      } else {
-        setScreen("login");
-      }
+      if (session?.user?.email === DOCTOR_EMAIL) { setScreen("main"); loadAllData(); }
+      else setScreen("login");
     });
   }, [loadAllData]);
 
   // ── Open appointment detail ───────────────────────────────────────────────
   const openApptDetail = async (appt) => {
-    setSelectedAppt(appt);
-    setSelectedApptSymptoms([]);
-    setScreen("apptDetail");
-    markSeen(appt);
-
+    setSelectedAppt(appt); setSelectedApptSymptoms([]); setScreen("apptDetail"); markSeen(appt);
     let userId = appt.uuid || null;
     if (!userId && appt.phone) {
       const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", appt.phone).single();
@@ -206,66 +253,55 @@ const fetchStats = useCallback(async () => {
   };
 
   // ── Open patient detail ───────────────────────────────────────────────────
-const openPatient = async (patient) => {
-  setSelectedPatient(patient);
-  setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
-  setPatientTab("bristol");
-  setScreen("patientDetail");
-  setLoadingPatient(true);
-
-  let userId = patient.uuid || null;
-  if (!userId && patient.phone) {
-    const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", patient.phone).single();
-    userId = prof?.user_id || null;
-  }
-
-  const { data: appts } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, Created_at").eq("phone", patient.phone).order("date", { ascending: false });
-  setPatientAppts(appts || []);
-
-  if (userId) {
-    const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
-      supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
-      supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
-      supabase.from("feedback").select("rating, message, submitted_at").eq("user_id", userId).order("submitted_at", { ascending: false }),
-    ]);
-    setPatientBristol(bristol || []);
-    setPatientSymptoms(symptoms || []);
-    setPatientFeedback(feedback || []);
-  }
-  setLoadingPatient(false);
-};
-
-  // ── Save settings ─────────────────────────────────────────────────────────
-  const saveSettings = async () => {
-    const entries = Object.entries(settings).map(([key, value]) => ({ key, value }));
-    for (const entry of entries) {
-      await supabase.from("clinic_settings").upsert(entry, { onConflict: "key" });
+  const openPatient = async (patient) => {
+    setSelectedPatient(patient);
+    setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
+    setPatientTab("bristol"); setScreen("patientDetail"); setLoadingPatient(true);
+    let userId = patient.uuid || null;
+    if (!userId && patient.phone) {
+      const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", patient.phone).single();
+      userId = prof?.user_id || null;
     }
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 2000);
+    const { data: appts } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, Created_at").eq("phone", patient.phone).order("date", { ascending: false });
+    setPatientAppts(appts || []);
+    if (userId) {
+      const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
+        supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
+        supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
+        supabase.from("feedback").select("rating, message, submitted_at").eq("user_id", userId).order("submitted_at", { ascending: false }),
+      ]);
+      setPatientBristol(bristol || []);
+      setPatientSymptoms(symptoms || []);
+      setPatientFeedback(feedback || []);
+    }
+    setLoadingPatient(false);
   };
 
-  // ── Auth handlers ─────────────────────────────────────────────────────────
+  const saveSettings = async () => {
+    const entries = Object.entries(settings).map(([key, value]) => ({ key, value }));
+    for (const entry of entries) await supabase.from("clinic_settings").upsert(entry, { onConflict: "key" });
+    setSettingsSaved(true); setTimeout(() => setSettingsSaved(false), 2000);
+  };
+
   const handleLogin = async () => {
     setLoginLoading(true); setLoginError("");
     const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
     setLoginLoading(false);
     if (error) { setLoginError("❌ " + error.message); return; }
-    if (data?.user?.email !== DOCTOR_EMAIL) {
-      await supabase.auth.signOut();
-      setLoginError("❌ Access denied. Doctor credentials only.");
-      return;
-    }
-    loadAllData();
-    setScreen("main");
+    if (data?.user?.email !== DOCTOR_EMAIL) { await supabase.auth.signOut(); setLoginError("❌ Access denied."); return; }
+    loadAllData(); setScreen("main");
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setScreen("login"); setLoginEmail(""); setLoginPassword("");
+    await supabase.auth.signOut(); setScreen("login"); setLoginEmail(""); setLoginPassword("");
   };
 
-  // ── Loading screen ────────────────────────────────────────────────────────
+  // ── Grouped data ──────────────────────────────────────────────────────────
+  const apptGrouped = groupByMonthWeek(appointments, a => a.date);
+  const patGrouped = groupByMonthWeek(patients, p => p.date);
+  const fbGrouped = groupByMonthWeek(feedbackList, f => f.submitted_at);
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (screen === "loading") {
     return (
       <div style={{ ...s.app, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -278,7 +314,7 @@ const openPatient = async (patient) => {
     );
   }
 
-  // ── Login screen ──────────────────────────────────────────────────────────
+  // ── Login ─────────────────────────────────────────────────────────────────
   if (screen === "login") {
     return (
       <div style={s.app}>
@@ -300,7 +336,7 @@ const openPatient = async (patient) => {
     );
   }
 
-  // ── Appointment detail screen ─────────────────────────────────────────────
+  // ── Appointment Detail ────────────────────────────────────────────────────
   if (screen === "apptDetail" && selectedAppt) {
     return (
       <div style={s.app}>
@@ -318,7 +354,7 @@ const openPatient = async (patient) => {
           </div>
           <p style={{ color: "#7fa8c9", fontSize: 11, fontWeight: "bold", marginBottom: 8, marginTop: 4 }}>🩺 SYMPTOMS / COMPLAINTS</p>
           {selectedApptSymptoms.length === 0
-            ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptoms logged for this patient yet.</p></div>
+            ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptoms logged yet.</p></div>
             : selectedApptSymptoms.map((log, i) => (
               <div key={i} style={s.card}>
                 <p style={{ color: "#7fa8c9", fontSize: 10, marginBottom: 6 }}>{new Date(log.logged_at).toLocaleString()}</p>
@@ -334,7 +370,7 @@ const openPatient = async (patient) => {
     );
   }
 
-  // ── Patient detail screen ─────────────────────────────────────────────────
+  // ── Patient Detail ────────────────────────────────────────────────────────
   if (screen === "patientDetail" && selectedPatient) {
     const tabs = [
       { id: "bristol", label: "💧 Bristol" },
@@ -362,7 +398,6 @@ const openPatient = async (patient) => {
             ))}
           </div>
           {loadingPatient && <p style={{ color: "#7fa8c9", fontSize: 13 }}>Loading...</p>}
-
           {patientTab === "bristol" && !loadingPatient && (
             patientBristol.length === 0
               ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No Bristol logs found.</p></div>
@@ -373,7 +408,6 @@ const openPatient = async (patient) => {
                 </div>
               ))
           )}
-
           {patientTab === "symptoms" && !loadingPatient && (
             patientSymptoms.length === 0
               ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptom logs found.</p></div>
@@ -386,10 +420,9 @@ const openPatient = async (patient) => {
                 </div>
               ))
           )}
-
           {patientTab === "feedback" && !loadingPatient && (
             patientFeedback.length === 0
-              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No feedback from this patient yet.</p></div>
+              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No feedback yet.</p></div>
               : patientFeedback.map((fb, i) => (
                 <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
                   <div style={{ display: "flex", gap: 2, marginBottom: 6 }}>
@@ -397,29 +430,27 @@ const openPatient = async (patient) => {
                     <span style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 14, marginLeft: 6 }}>{fb.rating}/5</span>
                   </div>
                   {fb.message && <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 4px", lineHeight: 1.5 }}>"{fb.message}"</p>}
-                    {fb.submitted_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.submitted_at).toLocaleString()}</p>}
+                  {fb.submitted_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.submitted_at).toLocaleString()}</p>}
                 </div>
               ))
           )}
-
           {patientTab === "appts" && !loadingPatient && (
             patientAppts.length === 0
               ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No appointments found.</p></div>
               : patientAppts.map((a, i) => (
                 <div key={i} style={s.card}>
                   <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 13, margin: "0 0 3px" }}>📅 {a.date}</p>
-                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>🏷️ {a.visit_type}</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>🏷️ {a.visit_type}</p>
                 </div>
               ))
           )}
-
           <button style={s.btnBack} onClick={() => setScreen("main")}>← Back to Patients</button>
         </div>
       </div>
     );
   }
 
-  // ── Main app ──────────────────────────────────────────────────────────────
+  // ── Main App ──────────────────────────────────────────────────────────────
   return (
     <div style={s.app}>
       <div style={s.navbar}>
@@ -430,89 +461,216 @@ const openPatient = async (patient) => {
         <button style={{ background: "none", border: "1px solid #7c3aed40", color: "#7fa8c9", padding: "5px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer" }} onClick={handleLogout}>Logout</button>
       </div>
 
+      {/* ── APPOINTMENTS TAB ── */}
       {activeTab === "appointments" && (
         <div style={s.page}>
           <h2 style={s.title}>Appointments 📅</h2>
-          <p style={s.subtitle}>{appointments.length} total · Tap any row to view details</p>
-          {appointments.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No appointments yet.</p></div>}
-          {appointments.map((a, i) => (
-            <div key={i} onClick={() => openApptDetail(a)}
-              style={{ ...s.card, cursor: "pointer", borderLeft: isSeen(a) ? "3px solid #00c9a7" : "3px solid #7c3aed", opacity: isSeen(a) ? 0.75 : 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>👤 {a.patient_name}</p>
-                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📞 {a.phone}</p>
-                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📅 {a.date} · {a.visit_type}</p>
-                </div>
-                <button style={s.seenBtn(isSeen(a))} onClick={(e) => toggleSeen(a, e)}>
-                  {isSeen(a) ? "✓ Seen" : "Mark Seen"}
+          <p style={s.subtitle}>{appointments.length} total appointments</p>
+
+          {/* MONTHS VIEW */}
+          {apptView === "months" && (
+            <>
+              {apptGrouped.sorted.map(month => (
+                <button key={month.key} style={s.monthBtn} onClick={() => { setApptMonth(month); setApptView("weeks"); }}>
+                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 15 }}>📅 {month.label}</span>
+                  <span style={s.countBadge}>{month.count}</span>
                 </button>
-              </div>
-            </div>
-          ))}
+              ))}
+              {apptGrouped.undated.length > 0 && (
+                <button style={s.monthBtn} onClick={() => { setApptMonth({ label: "Undated", key: "undated", weeks: { 0: { items: apptGrouped.undated, count: apptGrouped.undated.length } }, count: apptGrouped.undated.length }); setApptView("weeks"); }}>
+                  <span style={{ color: "#7fa8c9", fontWeight: "bold", fontSize: 15 }}>📅 Undated</span>
+                  <span style={s.countBadge}>{apptGrouped.undated.length}</span>
+                </button>
+              )}
+              {appointments.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No appointments yet.</p></div>}
+            </>
+          )}
+
+          {/* WEEKS VIEW */}
+          {apptView === "weeks" && apptMonth && (
+            <>
+              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>📅 {apptMonth.label}</p>
+              {Object.entries(apptMonth.weeks).sort((a, b) => Number(a[0]) - Number(b[0])).map(([week, data]) => (
+                <button key={week} style={s.weekBtn} onClick={() => { setApptWeek({ week, items: data.items }); setApptView("items"); }}>
+                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14 }}>{week === "0" ? "Undated" : getWeekLabel(week)}</span>
+                  <span style={s.countBadge}>{data.count}</span>
+                </button>
+              ))}
+              <button style={s.btnBack} onClick={() => setApptView("months")}>← Back to Months</button>
+            </>
+          )}
+
+          {/* ITEMS VIEW */}
+          {apptView === "items" && apptWeek && (
+            <>
+              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>
+                📅 {apptMonth?.label} — {apptWeek.week === "0" ? "Undated" : getWeekLabel(apptWeek.week)}
+              </p>
+              {apptWeek.items.map((a, i) => (
+                <div key={i} onClick={() => openApptDetail(a)}
+                  style={{ ...s.card, cursor: "pointer", borderLeft: isSeen(a) ? "3px solid #00c9a7" : "3px solid #7c3aed", opacity: isSeen(a) ? 0.75 : 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>👤 {a.patient_name}</p>
+                      <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📞 {a.phone}</p>
+                      <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📅 {a.date} · {a.visit_type}</p>
+                    </div>
+                    <button style={s.seenBtn(isSeen(a))} onClick={(e) => toggleSeen(a, e)}>
+                      {isSeen(a) ? "✓ Seen" : "Mark Seen"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <button style={s.btnBack} onClick={() => setApptView("weeks")}>← Back to Weeks</button>
+            </>
+          )}
         </div>
       )}
 
+      {/* ── PATIENTS TAB ── */}
       {activeTab === "patients" && (
         <div style={s.page}>
           <h2 style={s.title}>Patients 👥</h2>
-          <p style={s.subtitle}>{patients.length} unique patients · Tap to view full profile</p>
-          {patients.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No patients found.</p></div>}
-          {patients.map((p, i) => (
-            <div key={i} onClick={() => openPatient(p)}
-              style={{ ...s.card, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#7c3aed25", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>👤</div>
-              <div style={{ flex: 1 }}>
-                <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>{p.patient_name}</p>
-                <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📞 {p.phone}</p>
-              </div>
-              <span style={{ color: "#7c3aed", fontSize: 18 }}>›</span>
-            </div>
-          ))}
+          <p style={s.subtitle}>{patients.length} unique patients</p>
+
+          {patView === "months" && (
+            <>
+              {patGrouped.sorted.map(month => (
+                <button key={month.key} style={s.monthBtn} onClick={() => { setPatMonth(month); setPatView("weeks"); }}>
+                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 15 }}>👥 {month.label}</span>
+                  <span style={s.countBadge}>{month.count}</span>
+                </button>
+              ))}
+              {patGrouped.undated.length > 0 && (
+                <button style={s.monthBtn} onClick={() => { setPatMonth({ label: "Undated", key: "undated", weeks: { 0: { items: patGrouped.undated, count: patGrouped.undated.length } }, count: patGrouped.undated.length }); setPatView("weeks"); }}>
+                  <span style={{ color: "#7fa8c9", fontWeight: "bold", fontSize: 15 }}>👥 Undated</span>
+                  <span style={s.countBadge}>{patGrouped.undated.length}</span>
+                </button>
+              )}
+              {patients.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No patients found.</p></div>}
+            </>
+          )}
+
+          {patView === "weeks" && patMonth && (
+            <>
+              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>👥 {patMonth.label}</p>
+              {Object.entries(patMonth.weeks).sort((a, b) => Number(a[0]) - Number(b[0])).map(([week, data]) => (
+                <button key={week} style={s.weekBtn} onClick={() => { setPatWeek({ week, items: data.items }); setPatView("items"); }}>
+                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14 }}>{week === "0" ? "Undated" : getWeekLabel(week)}</span>
+                  <span style={s.countBadge}>{data.count}</span>
+                </button>
+              ))}
+              <button style={s.btnBack} onClick={() => setPatView("months")}>← Back to Months</button>
+            </>
+          )}
+
+          {patView === "items" && patWeek && (
+            <>
+              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>
+                👥 {patMonth?.label} — {patWeek.week === "0" ? "Undated" : getWeekLabel(patWeek.week)}
+              </p>
+              {patWeek.items.map((p, i) => (
+                <div key={i} onClick={() => openPatient(p)}
+                  style={{ ...s.card, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#7c3aed25", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>👤</div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>{p.patient_name}</p>
+                    <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📞 {p.phone}</p>
+                  </div>
+                  <span style={{ color: "#7c3aed", fontSize: 18 }}>›</span>
+                </div>
+              ))}
+              <button style={s.btnBack} onClick={() => setPatView("weeks")}>← Back to Weeks</button>
+            </>
+          )}
         </div>
       )}
 
+      {/* ── FEEDBACK TAB ── */}
       {activeTab === "feedback" && (
         <div style={s.page}>
           <h2 style={s.title}>Patient Feedback ⭐</h2>
           <p style={s.subtitle}>{feedbackList.length} reviews · Avg {stats.avgRating} stars</p>
-          {feedbackList.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No feedback yet.</p></div>}
-          {feedbackList.map((fb, i) => (
-            <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: 0 }}>👤 {fb.patient_name}</p>
-                <div style={{ display: "flex", gap: 1 }}>
-                  {[1,2,3,4,5].map(star => <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>)}
+
+          {fbView === "months" && (
+            <>
+              {fbGrouped.sorted.map(month => (
+                <button key={month.key} style={s.monthBtn} onClick={() => { setFbMonth(month); setFbView("weeks"); }}>
+                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 15 }}>⭐ {month.label}</span>
+                  <span style={s.countBadge}>{month.count}</span>
+                </button>
+              ))}
+              {fbGrouped.undated.length > 0 && (
+                <button style={s.monthBtn} onClick={() => { setFbMonth({ label: "Undated", key: "undated", weeks: { 0: { items: fbGrouped.undated, count: fbGrouped.undated.length } }, count: fbGrouped.undated.length }); setFbView("weeks"); }}>
+                  <span style={{ color: "#7fa8c9", fontWeight: "bold", fontSize: 15 }}>⭐ Undated</span>
+                  <span style={s.countBadge}>{fbGrouped.undated.length}</span>
+                </button>
+              )}
+              {feedbackList.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No feedback yet.</p></div>}
+            </>
+          )}
+
+          {fbView === "weeks" && fbMonth && (
+            <>
+              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>⭐ {fbMonth.label}</p>
+              {Object.entries(fbMonth.weeks).sort((a, b) => Number(a[0]) - Number(b[0])).map(([week, data]) => (
+                <button key={week} style={s.weekBtn} onClick={() => { setFbWeek({ week, items: data.items }); setFbView("items"); }}>
+                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14 }}>{week === "0" ? "Undated" : getWeekLabel(week)}</span>
+                  <span style={s.countBadge}>{data.count}</span>
+                </button>
+              ))}
+              <button style={s.btnBack} onClick={() => setFbView("months")}>← Back to Months</button>
+            </>
+          )}
+
+          {fbView === "items" && fbWeek && (
+            <>
+              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>
+                ⭐ {fbMonth?.label} — {fbWeek.week === "0" ? "Undated" : getWeekLabel(fbWeek.week)}
+              </p>
+              {fbWeek.items.map((fb, i) => (
+                <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: 0 }}>👤 {fb.patient_name}</p>
+                    <div style={{ display: "flex", gap: 1 }}>
+                      {[1,2,3,4,5].map(star => <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>)}
+                    </div>
+                  </div>
+                  <p style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 13, margin: "0 0 6px" }}>Rating: {fb.rating}/5</p>
+                  {fb.message
+                    ? <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5, fontStyle: "italic" }}>"{fb.message}"</p>
+                    : <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 6px", fontStyle: "italic" }}>No written comment.</p>
+                  }
+                  {fb.submitted_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.submitted_at).toLocaleString()}</p>}
                 </div>
-              </div>
-              {fb.message && <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5, fontStyle: "italic" }}>"{fb.message}"</p>}
-              {fb.created_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.created_at).toLocaleString()}</p>}
-            </div>
-          ))}
+              ))}
+              <button style={s.btnBack} onClick={() => setFbView("weeks")}>← Back to Weeks</button>
+            </>
+          )}
         </div>
       )}
 
-{activeTab === "stats" && (
-  <div style={s.page}>
-    <h2 style={s.title}>Statistics 📊</h2>
-    <p style={s.subtitle}>Overview of your practice</p>
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={s.statCard("#7c3aed")}>
-        <p style={{ color: "#7c3aed", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.appts}</p>
-        <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Appointments</p>
-      </div>
-      <div style={s.statCard("#f59e0b")}>
-        <p style={{ color: "#f59e0b", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.feedback}</p>
-        <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Reviews</p>
-      </div>
-      <div style={s.statCard("#ef4444")}>
-        <p style={{ color: "#ef4444", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.avgRating}★</p>
-        <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Avg Rating</p>
-      </div>
-    </div>
-  </div>
-)}
+      {/* ── STATS TAB ── */}
+      {activeTab === "stats" && (
+        <div style={s.page}>
+          <h2 style={s.title}>Statistics 📊</h2>
+          <p style={s.subtitle}>Overview of your practice</p>
+          <div style={s.statCard("#7c3aed")}>
+            <p style={{ color: "#7c3aed", fontSize: 34, fontWeight: "bold", margin: "0 0 4px" }}>{stats.appts}</p>
+            <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>Total Appointments</p>
+          </div>
+          <div style={s.statCard("#f59e0b")}>
+            <p style={{ color: "#f59e0b", fontSize: 34, fontWeight: "bold", margin: "0 0 4px" }}>{stats.feedback}</p>
+            <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>Total Reviews</p>
+          </div>
+          <div style={s.statCard("#ef4444")}>
+            <p style={{ color: "#ef4444", fontSize: 34, fontWeight: "bold", margin: "0 0 4px" }}>{stats.avgRating}★</p>
+            <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>Average Rating</p>
+          </div>
+        </div>
+      )}
 
+      {/* ── SETTINGS TAB ── */}
       {activeTab === "settings" && (
         <div style={s.page}>
           <h2 style={s.title}>Clinic Settings ⚙️</h2>
@@ -537,10 +695,14 @@ const openPatient = async (patient) => {
         </div>
       )}
 
+      {/* ── BOTTOM NAV ── */}
       <div style={s.bottomNav}>
         {navTabs.map(tab => (
           <button key={tab.id} style={s.bottomBtn(activeTab === tab.id)}
-            onClick={() => { setScreen("main"); setActiveTab(tab.id); }}>
+            onClick={() => {
+              setScreen("main"); setActiveTab(tab.id);
+              setApptView("months"); setPatView("months"); setFbView("months");
+            }}>
             <span style={{ fontSize: 18 }}>{tab.icon}</span>
             {tab.label}
           </button>
