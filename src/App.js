@@ -8,8 +8,6 @@ const supabase = createClient(
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const DOCTOR_EMAIL = "vivekvshirol@gmail.com";
-const DOCTOR_PASSWORD = "Vivek@masterdoc1";
-
 // ── Styles ───────────────────────────────────────────────────────────────────
 const s = {
   app: {
