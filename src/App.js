@@ -7,49 +7,49 @@ const supabase = createClient(
 );
 
 const DOCTOR_EMAIL = "vivekvshirol@gmail.com";
-
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+const getYear = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  return d.getFullYear();
+};
 
 const getMonthKey = (dateStr) => {
   if (!dateStr) return null;
   const d = new Date(dateStr);
   if (isNaN(d)) return null;
-  return `${d.getFullYear()}-${d.getMonth()}`;
+  return d.getMonth();
 };
 
-const getMonthLabel = (dateStr) => {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (isNaN(d)) return null;
-  return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-};
+const getMonthLabel = (monthIndex) => MONTHS[monthIndex];
 
 const getWeekOfMonth = (dateStr) => {
   if (!dateStr) return null;
   const d = new Date(dateStr);
   if (isNaN(d)) return null;
-  const day = d.getDate();
-  return Math.ceil(day / 7);
+  return Math.ceil(d.getDate() / 7);
 };
 
-const getWeekLabel = (week) => `Week ${week}`;
-
-const groupByMonthWeek = (items, getDate) => {
-  const months = {};
+const groupByYearMonthWeek = (items, getDate) => {
+  const years = {};
   const undated = [];
   items.forEach(item => {
     const dateStr = getDate(item);
-    const monthKey = getMonthKey(dateStr);
-    if (!monthKey) { undated.push(item); return; }
-    const monthLabel = getMonthLabel(dateStr);
+    const year = getYear(dateStr);
+    if (!year) { undated.push(item); return; }
+    const monthIndex = getMonthKey(dateStr);
     const week = getWeekOfMonth(dateStr);
-    if (!months[monthKey]) months[monthKey] = { label: monthLabel, key: monthKey, weeks: {}, count: 0 };
-    months[monthKey].count++;
-    if (!months[monthKey].weeks[week]) months[monthKey].weeks[week] = { items: [], count: 0 };
-    months[monthKey].weeks[week].items.push(item);
-    months[monthKey].weeks[week].count++;
+    if (!years[year]) years[year] = { year, months: {}, count: 0 };
+    years[year].count++;
+    if (!years[year].months[monthIndex]) years[year].months[monthIndex] = { monthIndex, label: getMonthLabel(monthIndex), weeks: {}, count: 0 };
+    years[year].months[monthIndex].count++;
+    if (!years[year].months[monthIndex].weeks[week]) years[year].months[monthIndex].weeks[week] = { items: [], count: 0 };
+    years[year].months[monthIndex].weeks[week].items.push(item);
+    years[year].months[monthIndex].weeks[week].count++;
   });
-  const sorted = Object.values(months).sort((a, b) => b.key.localeCompare(a.key));
+  const sorted = Object.values(years).sort((a, b) => b.year - a.year);
   return { sorted, undated };
 };
 
@@ -66,6 +66,7 @@ const s = {
   btn: { width: "100%", background: "#7c3aed", color: "#fff", border: "none", padding: 14, borderRadius: 12, fontSize: 15, fontWeight: "bold", cursor: "pointer", marginTop: 6 },
   btnOutline: { width: "100%", background: "#1e3a5f", color: "#7c3aed", border: "1px solid #7c3aed40", padding: 13, borderRadius: 12, fontSize: 14, fontWeight: "bold", cursor: "pointer", marginTop: 8 },
   btnBack: { width: "100%", background: "#0f2040", color: "#7fa8c9", border: "1px solid #1e3a5f", padding: 12, borderRadius: 12, fontSize: 14, cursor: "pointer", marginTop: 12, marginBottom: 8 },
+  yearBtn: { width: "100%", background: "#1a1060", border: "1px solid #7c3aed60", borderRadius: 14, padding: "18px 16px", marginBottom: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" },
   monthBtn: { width: "100%", background: "#132850", border: "1px solid #7c3aed40", borderRadius: 14, padding: "16px", marginBottom: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" },
   weekBtn: { width: "100%", background: "#0f2040", border: "1px solid #1e3a5f", borderRadius: 12, padding: "14px 16px", marginBottom: 8, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" },
   bottomNav: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: "#0f2040", borderTop: "2px solid #7c3aed40", display: "flex", justifyContent: "space-around", padding: "8px 0", zIndex: 20 },
@@ -74,6 +75,7 @@ const s = {
   countBadge: { background: "#7c3aed", color: "#fff", fontSize: 12, fontWeight: "bold", padding: "3px 10px", borderRadius: 20 },
   seenBtn: (seen) => ({ background: seen ? "#00c9a720" : "#1e3a5f", color: seen ? "#00c9a7" : "#7fa8c9", border: seen ? "1px solid #00c9a740" : "1px solid #1e3a5f", borderRadius: 8, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }),
   statCard: (color) => ({ background: "#132850", border: `1px solid ${color}40`, borderRadius: 14, padding: 16, textAlign: "center", marginBottom: 12 }),
+  breadcrumb: { color: "#7fa8c9", fontSize: 12, marginBottom: 14, lineHeight: 1.6 },
 };
 
 const navTabs = [
@@ -92,38 +94,34 @@ const bristolLabel = (type) => {
 export default function App() {
   const [screen, setScreen] = useState("loading");
   const [activeTab, setActiveTab] = useState("appointments");
-
-  // Auth
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
-
-  // Data
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [feedbackList, setFeedbackList] = useState([]);
   const [stats, setStats] = useState({ appts: 0, feedback: 0, avgRating: 0 });
 
-  // Navigation state for Month→Week→Items drill down
-  const [apptView, setApptView] = useState("months"); // months | weeks | items
+  // Drill-down state — view: years | months | weeks | items
+  const [apptView, setApptView] = useState("years");
+  const [apptYear, setApptYear] = useState(null);
   const [apptMonth, setApptMonth] = useState(null);
   const [apptWeek, setApptWeek] = useState(null);
 
-  const [patView, setPatView] = useState("months");
+  const [patView, setPatView] = useState("years");
+  const [patYear, setPatYear] = useState(null);
   const [patMonth, setPatMonth] = useState(null);
   const [patWeek, setPatWeek] = useState(null);
 
-  const [fbView, setFbView] = useState("months");
+  const [fbView, setFbView] = useState("years");
+  const [fbYear, setFbYear] = useState(null);
   const [fbMonth, setFbMonth] = useState(null);
   const [fbWeek, setFbWeek] = useState(null);
 
-  // Seen
   const [seenKeys, setSeenKeys] = useState(() => {
     try { return JSON.parse(localStorage.getItem("md_seen") || "[]"); } catch { return []; }
   });
-
-  // Detail screens
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [selectedApptSymptoms, setSelectedApptSymptoms] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -133,8 +131,6 @@ export default function App() {
   const [patientAppts, setPatientAppts] = useState([]);
   const [patientTab, setPatientTab] = useState("bristol");
   const [loadingPatient, setLoadingPatient] = useState(false);
-
-  // Settings
   const [settings, setSettings] = useState({
     doctor: "Dr. Vivek Shirol", quals: "MBBS, MD, DM Gastroenterology, SGPGI",
     clinic: "Dr. Vivek's Complete Gastro Care Clinic", address: "Belagavi, Karnataka",
@@ -143,7 +139,6 @@ export default function App() {
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
 
-  // ── Seen helpers ──────────────────────────────────────────────────────────
   const getApptKey = (a) => a.uuid ? String(a.uuid) : `${a.phone}|${a.date}|${a.visit_type}`;
   const isSeen = (a) => seenKeys.includes(getApptKey(a));
   const markSeen = useCallback((a) => {
@@ -165,7 +160,6 @@ export default function App() {
   };
   const toggleSeen = (a, e) => { e.stopPropagation(); isSeen(a) ? unmarkSeen(a) : markSeen(a); };
 
-  // ── Fetchers ──────────────────────────────────────────────────────────────
   const fetchAppointments = useCallback(async () => {
     const { data } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, uuid, Created_at").order("date", { ascending: false });
     if (data) setAppointments(data);
@@ -238,7 +232,6 @@ export default function App() {
     });
   }, [loadAllData]);
 
-  // ── Open appointment detail ───────────────────────────────────────────────
   const openApptDetail = async (appt) => {
     setSelectedAppt(appt); setSelectedApptSymptoms([]); setScreen("apptDetail"); markSeen(appt);
     let userId = appt.uuid || null;
@@ -252,59 +245,33 @@ export default function App() {
     }
   };
 
-  // ── Open patient detail ───────────────────────────────────────────────────
-const openPatient = async (patient) => {
-  setSelectedPatient(patient);
-  setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
-  setPatientTab("bristol"); setScreen("patientDetail"); setLoadingPatient(true);
-
-  // Step 1: Try uuid directly from patient object
-  let userId = patient.uuid || null;
-
-  // Step 2: If no uuid, look up patient_profiles by phone
-  if (!userId && patient.phone) {
-    const { data: prof } = await supabase
-      .from("patient_profiles")
-      .select("user_id")
-      .eq("phone", patient.phone)
-      .single();
-    userId = prof?.user_id || null;
-  }
-
-  // Step 3: If still no userId, search appointments by phone to find uuid
-  if (!userId && patient.phone) {
-    const { data: apptMatch } = await supabase
-      .from("appointments")
-      .select("uuid")
-      .eq("phone", patient.phone)
-      .not("uuid", "is", null)
-      .limit(1)
-      .single();
-    userId = apptMatch?.uuid || null;
-  }
-
-  // Fetch all appointments for this patient by phone
-  const { data: appts } = await supabase
-    .from("appointments")
-    .select("patient_name, phone, date, visit_type, Created_at")
-    .eq("phone", patient.phone)
-    .order("date", { ascending: false });
-  setPatientAppts(appts || []);
-
-  // Fetch logs only if we have a userId
-  if (userId) {
-    const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
-      supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
-      supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
-      supabase.from("feedback").select("rating, message, submitted_at").eq("user_id", userId).order("submitted_at", { ascending: false }),
-    ]);
-    setPatientBristol(bristol || []);
-    setPatientSymptoms(symptoms || []);
-    setPatientFeedback(feedback || []);
-  }
-
-  setLoadingPatient(false);
-};
+  const openPatient = async (patient) => {
+    setSelectedPatient(patient);
+    setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
+    setPatientTab("bristol"); setScreen("patientDetail"); setLoadingPatient(true);
+    let userId = patient.uuid || null;
+    if (!userId && patient.phone) {
+      const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", patient.phone).single();
+      userId = prof?.user_id || null;
+    }
+    if (!userId && patient.phone) {
+      const { data: apptMatch } = await supabase.from("appointments").select("uuid").eq("phone", patient.phone).not("uuid", "is", null).limit(1).single();
+      userId = apptMatch?.uuid || null;
+    }
+    const { data: appts } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, Created_at").eq("phone", patient.phone).order("date", { ascending: false });
+    setPatientAppts(appts || []);
+    if (userId) {
+      const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
+        supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
+        supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
+        supabase.from("feedback").select("rating, message, submitted_at").eq("user_id", userId).order("submitted_at", { ascending: false }),
+      ]);
+      setPatientBristol(bristol || []);
+      setPatientSymptoms(symptoms || []);
+      setPatientFeedback(feedback || []);
+    }
+    setLoadingPatient(false);
+  };
 
   const saveSettings = async () => {
     const entries = Object.entries(settings).map(([key, value]) => ({ key, value }));
@@ -325,12 +292,83 @@ const openPatient = async (patient) => {
     await supabase.auth.signOut(); setScreen("login"); setLoginEmail(""); setLoginPassword("");
   };
 
-  // ── Grouped data ──────────────────────────────────────────────────────────
-  const apptGrouped = groupByMonthWeek(appointments, a => a.date);
-  const patGrouped = groupByMonthWeek(patients, p => p.date);
-  const fbGrouped = groupByMonthWeek(feedbackList, f => f.submitted_at);
+  const resetNav = () => {
+    setApptView("years"); setApptYear(null); setApptMonth(null); setApptWeek(null);
+    setPatView("years"); setPatYear(null); setPatMonth(null); setPatWeek(null);
+    setFbView("years"); setFbYear(null); setFbMonth(null); setFbWeek(null);
+  };
 
-  // ── Loading ───────────────────────────────────────────────────────────────
+  const apptGrouped = groupByYearMonthWeek(appointments, a => a.date);
+  const patGrouped = groupByYearMonthWeek(patients, p => p.date);
+  const fbGrouped = groupByYearMonthWeek(feedbackList, f => f.submitted_at);
+
+  // ── Reusable drill-down renderer ──────────────────────────────────────────
+  const renderDrillDown = ({ grouped, view, setView, year, setYear, month, setMonth, week, setWeek, icon, renderItem, tabTitle, totalCount }) => (
+    <div style={s.page}>
+      <h2 style={s.title}>{tabTitle}</h2>
+      <p style={s.subtitle}>{totalCount} total entries</p>
+
+      {/* YEARS */}
+      {view === "years" && (
+        <>
+          {grouped.sorted.map(y => (
+            <button key={y.year} style={s.yearBtn} onClick={() => { setYear(y); setView("months"); }}>
+              <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 16 }}>{icon} {y.year}</span>
+              <span style={s.countBadge}>{y.count}</span>
+            </button>
+          ))}
+          {grouped.undated.length > 0 && (
+            <button style={s.yearBtn} onClick={() => {
+              setYear({ year: "Undated", months: { 0: { label: "Undated", weeks: { 0: { items: grouped.undated, count: grouped.undated.length } }, count: grouped.undated.length } }, count: grouped.undated.length });
+              setView("months");
+            }}>
+              <span style={{ color: "#7fa8c9", fontWeight: "bold", fontSize: 16 }}>{icon} Undated</span>
+              <span style={s.countBadge}>{grouped.undated.length}</span>
+            </button>
+          )}
+          {totalCount === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No entries yet.</p></div>}
+        </>
+      )}
+
+      {/* MONTHS */}
+      {view === "months" && year && (
+        <>
+          <p style={s.breadcrumb}>{icon} {year.year}</p>
+          {Object.values(year.months).sort((a, b) => a.monthIndex - b.monthIndex).map(m => (
+            <button key={m.monthIndex} style={s.monthBtn} onClick={() => { setMonth(m); setView("weeks"); }}>
+              <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 15 }}>{icon} {m.label}</span>
+              <span style={s.countBadge}>{m.count}</span>
+            </button>
+          ))}
+          <button style={s.btnBack} onClick={() => { setView("years"); setYear(null); }}>← Back to Years</button>
+        </>
+      )}
+
+      {/* WEEKS */}
+      {view === "weeks" && month && (
+        <>
+          <p style={s.breadcrumb}>{icon} {year?.year} › {month.label}</p>
+          {Object.entries(month.weeks).sort((a, b) => Number(a[0]) - Number(b[0])).map(([w, data]) => (
+            <button key={w} style={s.weekBtn} onClick={() => { setWeek({ week: w, items: data.items }); setView("items"); }}>
+              <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14 }}>{w === "0" ? "Undated" : `Week ${w}`}</span>
+              <span style={s.countBadge}>{data.count}</span>
+            </button>
+          ))}
+          <button style={s.btnBack} onClick={() => { setView("months"); setMonth(null); }}>← Back to Months</button>
+        </>
+      )}
+
+      {/* ITEMS */}
+      {view === "items" && week && (
+        <>
+          <p style={s.breadcrumb}>{icon} {year?.year} › {month?.label} › {week.week === "0" ? "Undated" : `Week ${week.week}`}</p>
+          {week.items.map((item, i) => renderItem(item, i))}
+          <button style={s.btnBack} onClick={() => { setView("weeks"); setWeek(null); }}>← Back to Weeks</button>
+        </>
+      )}
+    </div>
+  );
+
   if (screen === "loading") {
     return (
       <div style={{ ...s.app, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -343,7 +381,6 @@ const openPatient = async (patient) => {
     );
   }
 
-  // ── Login ─────────────────────────────────────────────────────────────────
   if (screen === "login") {
     return (
       <div style={s.app}>
@@ -365,7 +402,6 @@ const openPatient = async (patient) => {
     );
   }
 
-  // ── Appointment Detail ────────────────────────────────────────────────────
   if (screen === "apptDetail" && selectedAppt) {
     return (
       <div style={s.app}>
@@ -399,7 +435,6 @@ const openPatient = async (patient) => {
     );
   }
 
-  // ── Patient Detail ────────────────────────────────────────────────────────
   if (screen === "patientDetail" && selectedPatient) {
     const tabs = [
       { id: "bristol", label: "💧 Bristol" },
@@ -479,7 +514,6 @@ const openPatient = async (patient) => {
     );
   }
 
-  // ── Main App ──────────────────────────────────────────────────────────────
   return (
     <div style={s.app}>
       <div style={s.navbar}>
@@ -490,196 +524,81 @@ const openPatient = async (patient) => {
         <button style={{ background: "none", border: "1px solid #7c3aed40", color: "#7fa8c9", padding: "5px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer" }} onClick={handleLogout}>Logout</button>
       </div>
 
-      {/* ── APPOINTMENTS TAB ── */}
-      {activeTab === "appointments" && (
-        <div style={s.page}>
-          <h2 style={s.title}>Appointments 📅</h2>
-          <p style={s.subtitle}>{appointments.length} total appointments</p>
+      {activeTab === "appointments" && renderDrillDown({
+        grouped: apptGrouped,
+        view: apptView, setView: setApptView,
+        year: apptYear, setYear: setApptYear,
+        month: apptMonth, setMonth: setApptMonth,
+        week: apptWeek, setWeek: setApptWeek,
+        icon: "📅",
+        tabTitle: "Appointments 📅",
+        totalCount: appointments.length,
+        renderItem: (a, i) => (
+          <div key={i} onClick={() => openApptDetail(a)}
+            style={{ ...s.card, cursor: "pointer", borderLeft: isSeen(a) ? "3px solid #00c9a7" : "3px solid #7c3aed", opacity: isSeen(a) ? 0.75 : 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>👤 {a.patient_name}</p>
+                <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📞 {a.phone}</p>
+                <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📅 {a.date} · {a.visit_type}</p>
+              </div>
+              <button style={s.seenBtn(isSeen(a))} onClick={(e) => toggleSeen(a, e)}>
+                {isSeen(a) ? "✓ Seen" : "Mark Seen"}
+              </button>
+            </div>
+          </div>
+        ),
+      })}
 
-          {/* MONTHS VIEW */}
-          {apptView === "months" && (
-            <>
-              {apptGrouped.sorted.map(month => (
-                <button key={month.key} style={s.monthBtn} onClick={() => { setApptMonth(month); setApptView("weeks"); }}>
-                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 15 }}>📅 {month.label}</span>
-                  <span style={s.countBadge}>{month.count}</span>
-                </button>
-              ))}
-              {apptGrouped.undated.length > 0 && (
-                <button style={s.monthBtn} onClick={() => { setApptMonth({ label: "Undated", key: "undated", weeks: { 0: { items: apptGrouped.undated, count: apptGrouped.undated.length } }, count: apptGrouped.undated.length }); setApptView("weeks"); }}>
-                  <span style={{ color: "#7fa8c9", fontWeight: "bold", fontSize: 15 }}>📅 Undated</span>
-                  <span style={s.countBadge}>{apptGrouped.undated.length}</span>
-                </button>
-              )}
-              {appointments.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No appointments yet.</p></div>}
-            </>
-          )}
+      {activeTab === "patients" && renderDrillDown({
+        grouped: patGrouped,
+        view: patView, setView: setPatView,
+        year: patYear, setYear: setPatYear,
+        month: patMonth, setMonth: setPatMonth,
+        week: patWeek, setWeek: setPatWeek,
+        icon: "👥",
+        tabTitle: "Patients 👥",
+        totalCount: patients.length,
+        renderItem: (p, i) => (
+          <div key={i} onClick={() => openPatient(p)}
+            style={{ ...s.card, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#7c3aed25", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>👤</div>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>{p.patient_name}</p>
+              <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📞 {p.phone}</p>
+            </div>
+            <span style={{ color: "#7c3aed", fontSize: 18 }}>›</span>
+          </div>
+        ),
+      })}
 
-          {/* WEEKS VIEW */}
-          {apptView === "weeks" && apptMonth && (
-            <>
-              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>📅 {apptMonth.label}</p>
-              {Object.entries(apptMonth.weeks).sort((a, b) => Number(a[0]) - Number(b[0])).map(([week, data]) => (
-                <button key={week} style={s.weekBtn} onClick={() => { setApptWeek({ week, items: data.items }); setApptView("items"); }}>
-                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14 }}>{week === "0" ? "Undated" : getWeekLabel(week)}</span>
-                  <span style={s.countBadge}>{data.count}</span>
-                </button>
-              ))}
-              <button style={s.btnBack} onClick={() => setApptView("months")}>← Back to Months</button>
-            </>
-          )}
+      {activeTab === "feedback" && renderDrillDown({
+        grouped: fbGrouped,
+        view: fbView, setView: setFbView,
+        year: fbYear, setYear: setFbYear,
+        month: fbMonth, setMonth: setFbMonth,
+        week: fbWeek, setWeek: setFbWeek,
+        icon: "⭐",
+        tabTitle: "Patient Feedback ⭐",
+        totalCount: feedbackList.length,
+        renderItem: (fb, i) => (
+          <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: 0 }}>👤 {fb.patient_name}</p>
+              <div style={{ display: "flex", gap: 1 }}>
+                {[1,2,3,4,5].map(star => <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>)}
+              </div>
+            </div>
+            <p style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 13, margin: "0 0 6px" }}>Rating: {fb.rating}/5</p>
+            {fb.message
+              ? <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5, fontStyle: "italic" }}>"{fb.message}"</p>
+              : <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 6px", fontStyle: "italic" }}>No written comment.</p>
+            }
+            {fb.submitted_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.submitted_at).toLocaleString()}</p>}
+          </div>
+        ),
+      })}
 
-          {/* ITEMS VIEW */}
-          {apptView === "items" && apptWeek && (
-            <>
-              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>
-                📅 {apptMonth?.label} — {apptWeek.week === "0" ? "Undated" : getWeekLabel(apptWeek.week)}
-              </p>
-              {apptWeek.items.map((a, i) => (
-                <div key={i} onClick={() => openApptDetail(a)}
-                  style={{ ...s.card, cursor: "pointer", borderLeft: isSeen(a) ? "3px solid #00c9a7" : "3px solid #7c3aed", opacity: isSeen(a) ? 0.75 : 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>👤 {a.patient_name}</p>
-                      <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📞 {a.phone}</p>
-                      <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📅 {a.date} · {a.visit_type}</p>
-                    </div>
-                    <button style={s.seenBtn(isSeen(a))} onClick={(e) => toggleSeen(a, e)}>
-                      {isSeen(a) ? "✓ Seen" : "Mark Seen"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <button style={s.btnBack} onClick={() => setApptView("weeks")}>← Back to Weeks</button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ── PATIENTS TAB ── */}
-      {activeTab === "patients" && (
-        <div style={s.page}>
-          <h2 style={s.title}>Patients 👥</h2>
-          <p style={s.subtitle}>{patients.length} unique patients</p>
-
-          {patView === "months" && (
-            <>
-              {patGrouped.sorted.map(month => (
-                <button key={month.key} style={s.monthBtn} onClick={() => { setPatMonth(month); setPatView("weeks"); }}>
-                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 15 }}>👥 {month.label}</span>
-                  <span style={s.countBadge}>{month.count}</span>
-                </button>
-              ))}
-              {patGrouped.undated.length > 0 && (
-                <button style={s.monthBtn} onClick={() => { setPatMonth({ label: "Undated", key: "undated", weeks: { 0: { items: patGrouped.undated, count: patGrouped.undated.length } }, count: patGrouped.undated.length }); setPatView("weeks"); }}>
-                  <span style={{ color: "#7fa8c9", fontWeight: "bold", fontSize: 15 }}>👥 Undated</span>
-                  <span style={s.countBadge}>{patGrouped.undated.length}</span>
-                </button>
-              )}
-              {patients.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No patients found.</p></div>}
-            </>
-          )}
-
-          {patView === "weeks" && patMonth && (
-            <>
-              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>👥 {patMonth.label}</p>
-              {Object.entries(patMonth.weeks).sort((a, b) => Number(a[0]) - Number(b[0])).map(([week, data]) => (
-                <button key={week} style={s.weekBtn} onClick={() => { setPatWeek({ week, items: data.items }); setPatView("items"); }}>
-                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14 }}>{week === "0" ? "Undated" : getWeekLabel(week)}</span>
-                  <span style={s.countBadge}>{data.count}</span>
-                </button>
-              ))}
-              <button style={s.btnBack} onClick={() => setPatView("months")}>← Back to Months</button>
-            </>
-          )}
-
-          {patView === "items" && patWeek && (
-            <>
-              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>
-                👥 {patMonth?.label} — {patWeek.week === "0" ? "Undated" : getWeekLabel(patWeek.week)}
-              </p>
-              {patWeek.items.map((p, i) => (
-                <div key={i} onClick={() => openPatient(p)}
-                  style={{ ...s.card, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#7c3aed25", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>👤</div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>{p.patient_name}</p>
-                    <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📞 {p.phone}</p>
-                  </div>
-                  <span style={{ color: "#7c3aed", fontSize: 18 }}>›</span>
-                </div>
-              ))}
-              <button style={s.btnBack} onClick={() => setPatView("weeks")}>← Back to Weeks</button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ── FEEDBACK TAB ── */}
-      {activeTab === "feedback" && (
-        <div style={s.page}>
-          <h2 style={s.title}>Patient Feedback ⭐</h2>
-          <p style={s.subtitle}>{feedbackList.length} reviews · Avg {stats.avgRating} stars</p>
-
-          {fbView === "months" && (
-            <>
-              {fbGrouped.sorted.map(month => (
-                <button key={month.key} style={s.monthBtn} onClick={() => { setFbMonth(month); setFbView("weeks"); }}>
-                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 15 }}>⭐ {month.label}</span>
-                  <span style={s.countBadge}>{month.count}</span>
-                </button>
-              ))}
-              {fbGrouped.undated.length > 0 && (
-                <button style={s.monthBtn} onClick={() => { setFbMonth({ label: "Undated", key: "undated", weeks: { 0: { items: fbGrouped.undated, count: fbGrouped.undated.length } }, count: fbGrouped.undated.length }); setFbView("weeks"); }}>
-                  <span style={{ color: "#7fa8c9", fontWeight: "bold", fontSize: 15 }}>⭐ Undated</span>
-                  <span style={s.countBadge}>{fbGrouped.undated.length}</span>
-                </button>
-              )}
-              {feedbackList.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No feedback yet.</p></div>}
-            </>
-          )}
-
-          {fbView === "weeks" && fbMonth && (
-            <>
-              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>⭐ {fbMonth.label}</p>
-              {Object.entries(fbMonth.weeks).sort((a, b) => Number(a[0]) - Number(b[0])).map(([week, data]) => (
-                <button key={week} style={s.weekBtn} onClick={() => { setFbWeek({ week, items: data.items }); setFbView("items"); }}>
-                  <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14 }}>{week === "0" ? "Undated" : getWeekLabel(week)}</span>
-                  <span style={s.countBadge}>{data.count}</span>
-                </button>
-              ))}
-              <button style={s.btnBack} onClick={() => setFbView("months")}>← Back to Months</button>
-            </>
-          )}
-
-          {fbView === "items" && fbWeek && (
-            <>
-              <p style={{ color: "#7c3aed", fontWeight: "bold", fontSize: 16, marginBottom: 14 }}>
-                ⭐ {fbMonth?.label} — {fbWeek.week === "0" ? "Undated" : getWeekLabel(fbWeek.week)}
-              </p>
-              {fbWeek.items.map((fb, i) => (
-                <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: 0 }}>👤 {fb.patient_name}</p>
-                    <div style={{ display: "flex", gap: 1 }}>
-                      {[1,2,3,4,5].map(star => <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>)}
-                    </div>
-                  </div>
-                  <p style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 13, margin: "0 0 6px" }}>Rating: {fb.rating}/5</p>
-                  {fb.message
-                    ? <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5, fontStyle: "italic" }}>"{fb.message}"</p>
-                    : <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 6px", fontStyle: "italic" }}>No written comment.</p>
-                  }
-                  {fb.submitted_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.submitted_at).toLocaleString()}</p>}
-                </div>
-              ))}
-              <button style={s.btnBack} onClick={() => setFbView("weeks")}>← Back to Weeks</button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ── STATS TAB ── */}
       {activeTab === "stats" && (
         <div style={s.page}>
           <h2 style={s.title}>Statistics 📊</h2>
@@ -699,7 +618,6 @@ const openPatient = async (patient) => {
         </div>
       )}
 
-      {/* ── SETTINGS TAB ── */}
       {activeTab === "settings" && (
         <div style={s.page}>
           <h2 style={s.title}>Clinic Settings ⚙️</h2>
@@ -724,14 +642,10 @@ const openPatient = async (patient) => {
         </div>
       )}
 
-      {/* ── BOTTOM NAV ── */}
       <div style={s.bottomNav}>
         {navTabs.map(tab => (
           <button key={tab.id} style={s.bottomBtn(activeTab === tab.id)}
-            onClick={() => {
-              setScreen("main"); setActiveTab(tab.id);
-              setApptView("months"); setPatView("months"); setFbView("months");
-            }}>
+            onClick={() => { setScreen("main"); setActiveTab(tab.id); resetNav(); }}>
             <span style={{ fontSize: 18 }}>{tab.icon}</span>
             {tab.label}
           </button>
