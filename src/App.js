@@ -6,81 +6,26 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tYXRsZ3Bjdmh2Z2VxaWF6dXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNzg2NjUsImV4cCI6MjA5Mjk1NDY2NX0._nEy0wPP_mRcjPUO9v6oBBhdcCRYERwC8sDULwTUjcI"
 );
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
 const DOCTOR_EMAIL = "vivekvshirol@gmail.com";
-// ── Styles ───────────────────────────────────────────────────────────────────
+
 const s = {
-  app: {
-    background: "#0a1628", minHeight: "100vh", color: "#e8f4f8",
-    fontFamily: "Arial, sans-serif", maxWidth: 500, margin: "0 auto",
-    padding: "0 0 80px", position: "relative",
-  },
-  navbar: {
-    background: "#0f2040", borderBottom: "2px solid #7c3aed",
-    padding: "12px 20px", display: "flex", justifyContent: "space-between",
-    alignItems: "center", position: "sticky", top: 0, zIndex: 20,
-  },
+  app: { background: "#0a1628", minHeight: "100vh", color: "#e8f4f8", fontFamily: "Arial, sans-serif", maxWidth: 500, margin: "0 auto", padding: "0 0 80px", position: "relative" },
+  navbar: { background: "#0f2040", borderBottom: "2px solid #7c3aed", padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 20 },
   logo: { color: "#7c3aed", fontWeight: "bold", fontSize: 17 },
   page: { padding: "18px 16px", position: "relative" },
   title: { color: "#7c3aed", fontSize: 20, marginBottom: 4 },
   subtitle: { color: "#7fa8c9", fontSize: 13, marginBottom: 18 },
-  card: {
-    background: "#132850", border: "1px solid #1e3a5f",
-    borderRadius: 14, padding: 16, marginBottom: 12,
-  },
-  input: {
-    width: "100%", padding: 12, borderRadius: 10,
-    border: "1px solid #1e3a5f", background: "#0f2040",
-    color: "#e8f4f8", fontSize: 15, marginBottom: 14,
-    boxSizing: "border-box", display: "block",
-  },
-  label: {
-    color: "#7fa8c9", fontSize: 11, marginBottom: 5,
-    display: "block", textTransform: "uppercase", letterSpacing: 0.5,
-  },
-  btn: {
-    width: "100%", background: "#7c3aed", color: "#fff",
-    border: "none", padding: 14, borderRadius: 12,
-    fontSize: 15, fontWeight: "bold", cursor: "pointer", marginTop: 6,
-  },
-  btnOutline: {
-    width: "100%", background: "#1e3a5f", color: "#7c3aed",
-    border: "1px solid #7c3aed40", padding: 13, borderRadius: 12,
-    fontSize: 14, fontWeight: "bold", cursor: "pointer", marginTop: 8,
-  },
-  btnBack: {
-    width: "100%", background: "#0f2040", color: "#7fa8c9",
-    border: "1px solid #1e3a5f", padding: 12, borderRadius: 12,
-    fontSize: 14, cursor: "pointer", marginTop: 12,
-  },
-  bottomNav: {
-    position: "fixed", bottom: 0, left: "50%",
-    transform: "translateX(-50%)", width: "100%", maxWidth: 500,
-    background: "#0f2040", borderTop: "2px solid #7c3aed40",
-    display: "flex", justifyContent: "space-around",
-    padding: "8px 0", zIndex: 20,
-  },
-  bottomBtn: (active) => ({
-    background: "none", border: "none", cursor: "pointer",
-    color: active ? "#7c3aed" : "#7fa8c9", fontSize: 9,
-    display: "flex", flexDirection: "column", alignItems: "center",
-    gap: 2, padding: "3px 5px",
-  }),
-  badge: (color) => ({
-    background: color + "25", color, fontSize: 10,
-    padding: "2px 8px", borderRadius: 20, display: "inline-block",
-  }),
-  seenBtn: (seen) => ({
-    background: seen ? "#00c9a720" : "#1e3a5f",
-    color: seen ? "#00c9a7" : "#7fa8c9",
-    border: seen ? "1px solid #00c9a740" : "1px solid #1e3a5f",
-    borderRadius: 8, padding: "4px 10px", fontSize: 11,
-    cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap",
-  }),
-  statCard: (color) => ({
-    background: "#132850", border: `1px solid ${color}40`,
-    borderRadius: 14, padding: 16, flex: 1, textAlign: "center",
-  }),
+  card: { background: "#132850", border: "1px solid #1e3a5f", borderRadius: 14, padding: 16, marginBottom: 12 },
+  input: { width: "100%", padding: 12, borderRadius: 10, border: "1px solid #1e3a5f", background: "#0f2040", color: "#e8f4f8", fontSize: 15, marginBottom: 14, boxSizing: "border-box", display: "block" },
+  label: { color: "#7fa8c9", fontSize: 11, marginBottom: 5, display: "block", textTransform: "uppercase", letterSpacing: 0.5 },
+  btn: { width: "100%", background: "#7c3aed", color: "#fff", border: "none", padding: 14, borderRadius: 12, fontSize: 15, fontWeight: "bold", cursor: "pointer", marginTop: 6 },
+  btnOutline: { width: "100%", background: "#1e3a5f", color: "#7c3aed", border: "1px solid #7c3aed40", padding: 13, borderRadius: 12, fontSize: 14, fontWeight: "bold", cursor: "pointer", marginTop: 8 },
+  btnBack: { width: "100%", background: "#0f2040", color: "#7fa8c9", border: "1px solid #1e3a5f", padding: 12, borderRadius: 12, fontSize: 14, cursor: "pointer", marginTop: 12 },
+  bottomNav: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 500, background: "#0f2040", borderTop: "2px solid #7c3aed40", display: "flex", justifyContent: "space-around", padding: "8px 0", zIndex: 20 },
+  bottomBtn: (active) => ({ background: "none", border: "none", cursor: "pointer", color: active ? "#7c3aed" : "#7fa8c9", fontSize: 9, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "3px 5px" }),
+  badge: (color) => ({ background: color + "25", color, fontSize: 10, padding: "2px 8px", borderRadius: 20, display: "inline-block" }),
+  seenBtn: (seen) => ({ background: seen ? "#00c9a720" : "#1e3a5f", color: seen ? "#00c9a7" : "#7fa8c9", border: seen ? "1px solid #00c9a740" : "1px solid #1e3a5f", borderRadius: 8, padding: "4px 10px", fontSize: 11, cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap" }),
+  statCard: (color) => ({ background: "#132850", border: `1px solid ${color}40`, borderRadius: 14, padding: 16, flex: 1, textAlign: "center" }),
 };
 
 const navTabs = [
@@ -91,35 +36,25 @@ const navTabs = [
   { id: "settings", icon: "⚙️", label: "Settings" },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const bristolLabel = (type) => {
   const map = { 1: "Type 1 – Constipation", 2: "Type 2 – Constipation", 3: "Type 3 – Normal", 4: "Type 4 – Normal", 5: "Type 5 – Lacking Fiber", 6: "Type 6 – Mild Diarrhea", 7: "Type 7 – Diarrhea" };
   return map[type] || `Type ${type}`;
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
 export default function App() {
-  const [screen, setScreen] = useState("login");
+  const [screen, setScreen] = useState("loading");
   const [activeTab, setActiveTab] = useState("appointments");
-
-  // Auth
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
-
-  // Data
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [feedbackList, setFeedbackList] = useState([]);
   const [stats, setStats] = useState({ appts: 0, patients: 0, feedback: 0, avgRating: 0 });
-
-  // Seen appointments — stored as array of composite keys (uuid|phone+date)
   const [seenKeys, setSeenKeys] = useState(() => {
     try { return JSON.parse(localStorage.getItem("md_seen") || "[]"); } catch { return []; }
   });
-
-  // Detail screens
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [selectedApptSymptoms, setSelectedApptSymptoms] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -129,113 +64,94 @@ export default function App() {
   const [patientAppts, setPatientAppts] = useState([]);
   const [patientTab, setPatientTab] = useState("bristol");
   const [loadingPatient, setLoadingPatient] = useState(false);
-
-  // Settings
   const [settings, setSettings] = useState({
     doctor: "Dr. Vivek Shirol", quals: "MBBS, MD, DM Gastroenterology, SGPGI",
-    clinic: "Dr. Vivek's Complete Gastro Care Clinic",
-    address: "Belagavi, Karnataka", phone: "8310417749",
-    timings: "Mon–Sat: 5:00 PM – 9:00 PM", holiday: "Sunday: Closed",
-    maps_link: "https://maps.app.goo.gl/eQvb8QB8ANJPX2pU7",
+    clinic: "Dr. Vivek's Complete Gastro Care Clinic", address: "Belagavi, Karnataka",
+    phone: "8310417749", timings: "Mon–Sat: 5:00 PM – 9:00 PM",
+    holiday: "Sunday: Closed", maps_link: "https://maps.app.goo.gl/eQvb8QB8ANJPX2pU7",
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
 
-  // ── Seen key helpers ──────────────────────────────────────────────────────
+  // ── Seen helpers ──────────────────────────────────────────────────────────
   const getApptKey = (a) => a.uuid ? String(a.uuid) : `${a.phone}|${a.date}|${a.visit_type}`;
   const isSeen = (a) => seenKeys.includes(getApptKey(a));
-  const markSeen = (a) => {
+  const markSeen = useCallback((a) => {
     const key = getApptKey(a);
-    if (seenKeys.includes(key)) return;
-    const updated = [...seenKeys, key];
-    setSeenKeys(updated);
-    localStorage.setItem("md_seen", JSON.stringify(updated));
-  };
+    setSeenKeys(prev => {
+      if (prev.includes(key)) return prev;
+      const updated = [...prev, key];
+      localStorage.setItem("md_seen", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
   const unmarkSeen = (a) => {
     const key = getApptKey(a);
-    const updated = seenKeys.filter(k => k !== key);
-    setSeenKeys(updated);
-    localStorage.setItem("md_seen", JSON.stringify(updated));
+    setSeenKeys(prev => {
+      const updated = prev.filter(k => k !== key);
+      localStorage.setItem("md_seen", JSON.stringify(updated));
+      return updated;
+    });
   };
-  const toggleSeen = (a, e) => {
-    e.stopPropagation();
-    isSeen(a) ? unmarkSeen(a) : markSeen(a);
-  };
+  const toggleSeen = (a, e) => { e.stopPropagation(); isSeen(a) ? unmarkSeen(a) : markSeen(a); };
 
-  // ── Fetch appointments ────────────────────────────────────────────────────
+  // ── Data fetchers ─────────────────────────────────────────────────────────
   const fetchAppointments = useCallback(async () => {
-  const { data } = await supabase
-    .from("appointments")
-    .select("patient_name, phone, date, visit_type, uuid, Created_at")
-    .order("date", { ascending: false });
-  if (data) setAppointments(data);
-}, []);
-  
-  // ── Fetch patients (deduplicated from appointments by phone) ──────────────
-  const fetchPatients = useCallback(async () => {
-  const { data } = await supabase
-    .from("appointments")
-    .select("patient_name, phone, uuid")
-    .order("date", { ascending: false });
-  if (!data) return;
-  const seen = new Set();
-  const unique = [];
-  for (const row of data) {
-    const key = row.phone || row.uuid || row.patient_name;
-    if (!seen.has(key)) { seen.add(key); unique.push(row); }
-  }
-  setPatients(unique);
-}, []);
+    const { data } = await supabase
+      .from("appointments")
+      .select("patient_name, phone, date, visit_type, uuid, Created_at")
+      .order("date", { ascending: false });
+    if (data) setAppointments(data);
+  }, []);
 
-  // ── Fetch feedback with names ─────────────────────────────────────────────
+  const fetchPatients = useCallback(async () => {
+    const { data } = await supabase
+      .from("appointments")
+      .select("patient_name, phone, uuid")
+      .order("date", { ascending: false });
+    if (!data) return;
+    const seen = new Set();
+    const unique = [];
+    for (const row of data) {
+      const key = row.phone || row.patient_name;
+      if (!seen.has(key)) { seen.add(key); unique.push(row); }
+    }
+    setPatients(unique);
+  }, []);
+
   const fetchFeedback = useCallback(async () => {
-    const [{ data: fbData }, { data: profileData }, { data: apptData }] = await Promise.all([
+    const [{ data: fbData }, { data: profileData }, { data: apptUuidData }] = await Promise.all([
       supabase.from("feedback").select("id, user_id, rating, message, created_at").order("created_at", { ascending: false }),
       supabase.from("patient_profiles").select("user_id, phone"),
-      supabase.from("appointments").select("patient_name, phone"),
+      supabase.from("appointments").select("patient_name, phone, uuid"),
     ]);
     if (!fbData) return;
 
-    // Build lookup maps
     const profileByUserId = {};
-    (profileData || []).forEach(p => { profileByUserId[p.user_id] = p.phone; });
+    (profileData || []).forEach(p => { if (p.user_id) profileByUserId[p.user_id] = p.phone; });
 
     const nameByPhone = {};
-    (apptData || []).forEach(a => {
-      if (a.phone && a.patient_name) nameByPhone[a.phone] = a.patient_name;
-    });
-
-    // Also build lookup: uuid in appointments → patient_name
     const nameByUuid = {};
-    (apptData || []).forEach(a => {});
-    // appointments has uuid column
-    const { data: apptUuidData } = await supabase.from("appointments").select("patient_name, uuid");
     (apptUuidData || []).forEach(a => {
+      if (a.phone && a.patient_name) nameByPhone[a.phone] = a.patient_name;
       if (a.uuid && a.patient_name) nameByUuid[a.uuid] = a.patient_name;
     });
 
     const enriched = fbData.map(fb => {
       let name = null;
-      // Try: feedback.user_id → appointments.uuid → patient_name
-      if (fb.user_id && nameByUuid[fb.user_id]) {
-        name = nameByUuid[fb.user_id];
-      }
-      // Try: feedback.user_id → patient_profiles.phone → appointments.patient_name
+      if (fb.user_id && nameByUuid[fb.user_id]) name = nameByUuid[fb.user_id];
       if (!name && fb.user_id && profileByUserId[fb.user_id]) {
-        const phone = profileByUserId[fb.user_id];
-        name = nameByPhone[phone] || null;
+        name = nameByPhone[profileByUserId[fb.user_id]] || null;
       }
       return { ...fb, patient_name: name || "Unknown Patient" };
     });
-
     setFeedbackList(enriched);
   }, []);
 
-  // ── Fetch stats ───────────────────────────────────────────────────────────
   const fetchStats = useCallback(async () => {
     const [{ data: appts }, { data: fb }, { data: prof }] = await Promise.all([
-      supabase.from("appointments").select("id", { count: "exact" }),
+      supabase.from("appointments").select("patient_name"),
       supabase.from("feedback").select("rating"),
-      supabase.from("patient_profiles").select("user_id", { count: "exact" }),
+      supabase.from("patient_profiles").select("user_id"),
     ]);
     const apptCount = appts?.length || 0;
     const patCount = prof?.length || 0;
@@ -244,7 +160,6 @@ export default function App() {
     setStats({ appts: apptCount, patients: patCount, feedback: fbCount, avgRating });
   }, []);
 
-  // ── Fetch settings ────────────────────────────────────────────────────────
   const fetchSettings = useCallback(async () => {
     const { data } = await supabase.from("clinic_settings").select("key, value");
     if (data && data.length > 0) {
@@ -254,6 +169,44 @@ export default function App() {
     }
   }, []);
 
+  const loadAllData = useCallback(() => {
+    fetchAppointments();
+    fetchPatients();
+    fetchFeedback();
+    fetchStats();
+    fetchSettings();
+  }, [fetchAppointments, fetchPatients, fetchFeedback, fetchStats, fetchSettings]);
+
+  // ── Auth check on startup ─────────────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email === DOCTOR_EMAIL) {
+        setScreen("main");
+        loadAllData();
+      } else {
+        setScreen("login");
+      }
+    });
+  }, [loadAllData]);
+
+  // ── Open appointment detail ───────────────────────────────────────────────
+  const openApptDetail = async (appt) => {
+    setSelectedAppt(appt);
+    setSelectedApptSymptoms([]);
+    setScreen("apptDetail");
+    markSeen(appt);
+
+    let userId = appt.uuid || null;
+    if (!userId && appt.phone) {
+      const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", appt.phone).single();
+      userId = prof?.user_id || null;
+    }
+    if (userId) {
+      const { data } = await supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(10);
+      setSelectedApptSymptoms(data || []);
+    }
+  };
+
   // ── Open patient detail ───────────────────────────────────────────────────
   const openPatient = async (patient) => {
     setSelectedPatient(patient);
@@ -262,24 +215,13 @@ export default function App() {
     setScreen("patientDetail");
     setLoadingPatient(true);
 
-    // Resolve user_id: prefer appointments.uuid, else look up via patient_profiles.phone
     let userId = patient.uuid || null;
-
     if (!userId && patient.phone) {
-      const { data: prof } = await supabase
-        .from("patient_profiles")
-        .select("user_id")
-        .eq("phone", patient.phone)
-        .single();
+      const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", patient.phone).single();
       userId = prof?.user_id || null;
     }
 
-    // Fetch all appointments for this patient by phone
-    const { data: appts } = await supabase
-      .from("appointments")
-      .select("patient_name, phone, date, visit_type, uuid, created_at")
-      .eq("phone", patient.phone)
-      .order("created_at", { ascending: false });
+    const { data: appts } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, Created_at").eq("phone", patient.phone).order("date", { ascending: false });
     setPatientAppts(appts || []);
 
     if (userId) {
@@ -292,44 +234,7 @@ export default function App() {
       setPatientSymptoms(symptoms || []);
       setPatientFeedback(feedback || []);
     }
-
     setLoadingPatient(false);
-  };
-
-  // ── Open appointment detail ───────────────────────────────────────────────
-  const openApptDetail = async (appt) => {
-    setSelectedAppt(appt);
-    setSelectedApptSymptoms([]);
-    setScreen("apptDetail");
-    markSeen(appt);
-
-    // Fetch symptom logs for this patient
-    const userId = appt.uuid || null;
-    if (userId) {
-      const { data } = await supabase
-        .from("symptom_logs")
-        .select("symptoms, logged_at")
-        .eq("user_id", userId)
-        .order("logged_at", { ascending: false })
-        .limit(5);
-      setSelectedApptSymptoms(data || []);
-    } else if (appt.phone) {
-      // Fallback: look up via patient_profiles
-      const { data: prof } = await supabase
-        .from("patient_profiles")
-        .select("user_id")
-        .eq("phone", appt.phone)
-        .single();
-      if (prof?.user_id) {
-        const { data } = await supabase
-          .from("symptom_logs")
-          .select("symptoms, logged_at")
-          .eq("user_id", prof.user_id)
-          .order("logged_at", { ascending: false })
-          .limit(5);
-        setSelectedApptSymptoms(data || []);
-      }
-    }
   };
 
   // ── Save settings ─────────────────────────────────────────────────────────
@@ -342,14 +247,19 @@ export default function App() {
     setTimeout(() => setSettingsSaved(false), 2000);
   };
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  // ── Auth handlers ─────────────────────────────────────────────────────────
   const handleLogin = async () => {
     setLoginLoading(true); setLoginError("");
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
     setLoginLoading(false);
     if (error) { setLoginError("❌ " + error.message); return; }
+    if (data?.user?.email !== DOCTOR_EMAIL) {
+      await supabase.auth.signOut();
+      setLoginError("❌ Access denied. Doctor credentials only.");
+      return;
+    }
+    loadAllData();
     setScreen("main");
-    setActiveTab("appointments");
   };
 
   const handleLogout = async () => {
@@ -357,25 +267,20 @@ export default function App() {
     setScreen("login"); setLoginEmail(""); setLoginPassword("");
   };
 
-  // ── Effects ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email === DOCTOR_EMAIL) setScreen("main");
-    });
-  }, []);
+  // ── Loading screen ────────────────────────────────────────────────────────
+  if (screen === "loading") {
+    return (
+      <div style={{ ...s.app, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🩺</div>
+          <p style={{ color: "#7c3aed", fontSize: 16, fontWeight: "bold" }}>MasterDoc</p>
+          <p style={{ color: "#7fa8c9", fontSize: 13 }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (screen !== "main") return;
-    fetchAppointments();
-    fetchPatients();
-    fetchFeedback();
-    fetchStats();
-    fetchSettings();
-  }, [screen, fetchAppointments, fetchPatients, fetchFeedback, fetchStats, fetchSettings]);
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // LOGIN SCREEN
-  // ══════════════════════════════════════════════════════════════════════════
+  // ── Login screen ──────────────────────────────────────────────────────────
   if (screen === "login") {
     return (
       <div style={s.app}>
@@ -397,9 +302,7 @@ export default function App() {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // APPOINTMENT DETAIL SCREEN
-  // ══════════════════════════════════════════════════════════════════════════
+  // ── Appointment detail screen ─────────────────────────────────────────────
   if (screen === "apptDetail" && selectedAppt) {
     return (
       <div style={s.app}>
@@ -415,38 +318,31 @@ export default function App() {
             <p style={{ color: "#7fa8c9", fontSize: 13, margin: "0 0 2px" }}>📅 {selectedAppt.date}</p>
             <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>🏷️ {selectedAppt.visit_type}</p>
           </div>
-
           <p style={{ color: "#7fa8c9", fontSize: 11, fontWeight: "bold", marginBottom: 8, marginTop: 4 }}>🩺 SYMPTOMS / COMPLAINTS</p>
-          {selectedApptSymptoms.length === 0 ? (
-            <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptoms logged for this patient yet.</p></div>
-          ) : (
-            selectedApptSymptoms.map((log, i) => (
+          {selectedApptSymptoms.length === 0
+            ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptoms logged for this patient yet.</p></div>
+            : selectedApptSymptoms.map((log, i) => (
               <div key={i} style={s.card}>
                 <p style={{ color: "#7fa8c9", fontSize: 10, marginBottom: 6 }}>{new Date(log.logged_at).toLocaleString()}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {(log.symptoms || []).map((sym, j) => (
-                    <span key={j} style={s.badge("#00c9a7")}>{sym}</span>
-                  ))}
+                  {(log.symptoms || []).map((sym, j) => <span key={j} style={s.badge("#00c9a7")}>{sym}</span>)}
                 </div>
               </div>
             ))
-          )}
-
+          }
           <button style={s.btnBack} onClick={() => setScreen("main")}>← Back to Appointments</button>
         </div>
       </div>
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // PATIENT DETAIL SCREEN
-  // ══════════════════════════════════════════════════════════════════════════
+  // ── Patient detail screen ─────────────────────────────────────────────────
   if (screen === "patientDetail" && selectedPatient) {
     const tabs = [
       { id: "bristol", label: "💧 Bristol" },
       { id: "symptoms", label: "🩺 Symptoms" },
       { id: "feedback", label: "⭐ Feedback" },
-      { id: "appts", label: "📅 Appointments" },
+      { id: "appts", label: "📅 Appts" },
     ];
     return (
       <div style={s.app}>
@@ -459,8 +355,6 @@ export default function App() {
             <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 16, margin: "0 0 3px" }}>👤 {selectedPatient.patient_name}</p>
             <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>📞 {selectedPatient.phone}</p>
           </div>
-
-          {/* Tab switcher */}
           <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto" }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setPatientTab(t.id)}
@@ -469,13 +363,11 @@ export default function App() {
               </button>
             ))}
           </div>
-
           {loadingPatient && <p style={{ color: "#7fa8c9", fontSize: 13 }}>Loading...</p>}
 
-          {/* Bristol tab */}
           {patientTab === "bristol" && !loadingPatient && (
             patientBristol.length === 0
-              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No Bristol logs found for this patient.</p></div>
+              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No Bristol logs found.</p></div>
               : patientBristol.map((b, i) => (
                 <div key={i} style={s.card}>
                   <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>{bristolLabel(b.stool_type)}</p>
@@ -484,32 +376,26 @@ export default function App() {
               ))
           )}
 
-          {/* Symptoms tab */}
           {patientTab === "symptoms" && !loadingPatient && (
             patientSymptoms.length === 0
-              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptom logs found for this patient.</p></div>
+              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptom logs found.</p></div>
               : patientSymptoms.map((log, i) => (
                 <div key={i} style={s.card}>
                   <p style={{ color: "#7fa8c9", fontSize: 10, marginBottom: 6 }}>{new Date(log.logged_at).toLocaleString()}</p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {(log.symptoms || []).map((sym, j) => (
-                      <span key={j} style={s.badge("#00c9a7")}>{sym}</span>
-                    ))}
+                    {(log.symptoms || []).map((sym, j) => <span key={j} style={s.badge("#00c9a7")}>{sym}</span>)}
                   </div>
                 </div>
               ))
           )}
 
-          {/* Feedback tab */}
           {patientTab === "feedback" && !loadingPatient && (
             patientFeedback.length === 0
-              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No feedback submitted by this patient yet.</p></div>
+              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No feedback from this patient yet.</p></div>
               : patientFeedback.map((fb, i) => (
                 <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
                   <div style={{ display: "flex", gap: 2, marginBottom: 6 }}>
-                    {[1,2,3,4,5].map(star => (
-                      <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 20 }}>★</span>
-                    ))}
+                    {[1,2,3,4,5].map(star => <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 20 }}>★</span>)}
                     <span style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 14, marginLeft: 6 }}>{fb.rating}/5</span>
                   </div>
                   {fb.message && <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 4px", lineHeight: 1.5 }}>"{fb.message}"</p>}
@@ -518,7 +404,6 @@ export default function App() {
               ))
           )}
 
-          {/* Appointments tab */}
           {patientTab === "appts" && !loadingPatient && (
             patientAppts.length === 0
               ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No appointments found.</p></div>
@@ -526,7 +411,6 @@ export default function App() {
                 <div key={i} style={s.card}>
                   <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 13, margin: "0 0 3px" }}>📅 {a.date}</p>
                   <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>🏷️ {a.visit_type}</p>
-                  {a.created_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>Booked: {new Date(a.created_at).toLocaleString()}</p>}
                 </div>
               ))
           )}
@@ -537,9 +421,7 @@ export default function App() {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // MAIN APP
-  // ══════════════════════════════════════════════════════════════════════════
+  // ── Main app ──────────────────────────────────────────────────────────────
   return (
     <div style={s.app}>
       <div style={s.navbar}>
@@ -550,7 +432,6 @@ export default function App() {
         <button style={{ background: "none", border: "1px solid #7c3aed40", color: "#7fa8c9", padding: "5px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer" }} onClick={handleLogout}>Logout</button>
       </div>
 
-      {/* ── APPOINTMENTS TAB ── */}
       {activeTab === "appointments" && (
         <div style={s.page}>
           <h2 style={s.title}>Appointments 📅</h2>
@@ -563,7 +444,7 @@ export default function App() {
                 <div style={{ flex: 1 }}>
                   <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>👤 {a.patient_name}</p>
                   <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📞 {a.phone}</p>
-                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📅 {a.date} · {a.visit_type}</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📅 {a.date} · {a.visit_type}</p>
                 </div>
                 <button style={s.seenBtn(isSeen(a))} onClick={(e) => toggleSeen(a, e)}>
                   {isSeen(a) ? "✓ Seen" : "Mark Seen"}
@@ -574,7 +455,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ── PATIENTS TAB ── */}
       {activeTab === "patients" && (
         <div style={s.page}>
           <h2 style={s.title}>Patients 👥</h2>
@@ -594,7 +474,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ── FEEDBACK TAB ── */}
       {activeTab === "feedback" && (
         <div style={s.page}>
           <h2 style={s.title}>Patient Feedback ⭐</h2>
@@ -605,9 +484,7 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: 0 }}>👤 {fb.patient_name}</p>
                 <div style={{ display: "flex", gap: 1 }}>
-                  {[1,2,3,4,5].map(star => (
-                    <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>
-                  ))}
+                  {[1,2,3,4,5].map(star => <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>)}
                 </div>
               </div>
               {fb.message && <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5, fontStyle: "italic" }}>"{fb.message}"</p>}
@@ -617,7 +494,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ── STATS TAB ── */}
       {activeTab === "stats" && (
         <div style={s.page}>
           <h2 style={s.title}>Statistics 📊</h2>
@@ -645,11 +521,10 @@ export default function App() {
         </div>
       )}
 
-      {/* ── SETTINGS TAB ── */}
       {activeTab === "settings" && (
         <div style={s.page}>
           <h2 style={s.title}>Clinic Settings ⚙️</h2>
-          <p style={s.subtitle}>Changes sync to GastroDoc app instantly</p>
+          <p style={s.subtitle}>Changes sync to GastroDoc instantly</p>
           {[
             { key: "doctor", label: "Doctor Name" },
             { key: "quals", label: "Qualifications" },
@@ -670,7 +545,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ── BOTTOM NAV ── */}
       <div style={s.bottomNav}>
         {navTabs.map(tab => (
           <button key={tab.id} style={s.bottomBtn(activeTab === tab.id)}
