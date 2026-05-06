@@ -6,917 +6,680 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tYXRsZ3Bjdmh2Z2VxaWF6dXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczNzg2NjUsImV4cCI6MjA5Mjk1NDY2NX0._nEy0wPP_mRcjPUO9v6oBBhdcCRYERwC8sDULwTUjcI"
 );
 
-const ADMIN_EMAIL = "vivekvshirol@gmail.com";
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const DOCTOR_EMAIL = "vivekvshirol@gmail.com";
+const DOCTOR_PASSWORD = "Vivek@masterdoc1";
 
+// ── Styles ───────────────────────────────────────────────────────────────────
 const s = {
   app: {
-    background: "#0a0f1e",
-    minHeight: "100vh",
-    color: "#e8f4f8",
-    fontFamily: "'Georgia', serif",
-    maxWidth: 500,
-    margin: "0 auto",
-    padding: "0 0 80px",
-    position: "relative",
+    background: "#0a1628", minHeight: "100vh", color: "#e8f4f8",
+    fontFamily: "Arial, sans-serif", maxWidth: 500, margin: "0 auto",
+    padding: "0 0 80px", position: "relative",
   },
   navbar: {
-    background: "linear-gradient(135deg, #0f1f3d, #162d4a)",
-    borderBottom: "2px solid #c9a84c",
-    padding: "14px 20px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
+    background: "#0f2040", borderBottom: "2px solid #7c3aed",
+    padding: "12px 20px", display: "flex", justifyContent: "space-between",
+    alignItems: "center", position: "sticky", top: 0, zIndex: 20,
   },
-  logo: { color: "#c9a84c", fontWeight: "bold", fontSize: 17, letterSpacing: 1 },
-  page: { padding: "20px 16px" },
-  title: { color: "#c9a84c", fontSize: 20, marginBottom: 4, fontWeight: "bold" },
-  subtitle: { color: "#7fa8c9", fontSize: 13, marginBottom: 20 },
+  logo: { color: "#7c3aed", fontWeight: "bold", fontSize: 17 },
+  page: { padding: "18px 16px", position: "relative" },
+  title: { color: "#7c3aed", fontSize: 20, marginBottom: 4 },
+  subtitle: { color: "#7fa8c9", fontSize: 13, marginBottom: 18 },
   card: {
-    background: "linear-gradient(135deg, #0f1f3d, #0d1a30)",
-    border: "1px solid #1e3a5f",
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
+    background: "#132850", border: "1px solid #1e3a5f",
+    borderRadius: 14, padding: 16, marginBottom: 12,
   },
   input: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 10,
-    border: "1px solid #c9a84c40",
-    background: "#0f1f3d",
-    color: "#e8f4f8",
-    fontSize: 15,
-    marginBottom: 14,
-    boxSizing: "border-box",
-    display: "block",
-    fontFamily: "'Georgia', serif",
+    width: "100%", padding: 12, borderRadius: 10,
+    border: "1px solid #1e3a5f", background: "#0f2040",
+    color: "#e8f4f8", fontSize: 15, marginBottom: 14,
+    boxSizing: "border-box", display: "block",
   },
   label: {
-    color: "#c9a84c",
-    fontSize: 11,
-    marginBottom: 5,
-    display: "block",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    color: "#7fa8c9", fontSize: 11, marginBottom: 5,
+    display: "block", textTransform: "uppercase", letterSpacing: 0.5,
   },
   btn: {
-    width: "100%",
-    background: "linear-gradient(135deg, #c9a84c, #a8832a)",
-    color: "#0a0f1e",
-    border: "none",
-    padding: 14,
-    borderRadius: 12,
-    fontSize: 15,
-    fontWeight: "bold",
-    cursor: "pointer",
-    marginTop: 6,
-    fontFamily: "'Georgia', serif",
+    width: "100%", background: "#7c3aed", color: "#fff",
+    border: "none", padding: 14, borderRadius: 12,
+    fontSize: 15, fontWeight: "bold", cursor: "pointer", marginTop: 6,
   },
-  badge: (color) => ({
-    background: color + "20",
-    color: color,
-    fontSize: 10,
-    padding: "3px 10px",
-    borderRadius: 20,
-    fontWeight: "bold",
-    display: "inline-block",
-  }),
+  btnOutline: {
+    width: "100%", background: "#1e3a5f", color: "#7c3aed",
+    border: "1px solid #7c3aed40", padding: 13, borderRadius: 12,
+    fontSize: 14, fontWeight: "bold", cursor: "pointer", marginTop: 8,
+  },
+  btnBack: {
+    width: "100%", background: "#0f2040", color: "#7fa8c9",
+    border: "1px solid #1e3a5f", padding: 12, borderRadius: 12,
+    fontSize: 14, cursor: "pointer", marginTop: 12,
+  },
   bottomNav: {
-    position: "fixed",
-    bottom: 0,
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: "100%",
-    maxWidth: 500,
-    background: "#0f1f3d",
-    borderTop: "1px solid #c9a84c40",
-    display: "flex",
-    justifyContent: "space-around",
-    padding: "8px 0",
-    zIndex: 10,
+    position: "fixed", bottom: 0, left: "50%",
+    transform: "translateX(-50%)", width: "100%", maxWidth: 500,
+    background: "#0f2040", borderTop: "2px solid #7c3aed40",
+    display: "flex", justifyContent: "space-around",
+    padding: "8px 0", zIndex: 20,
   },
   bottomBtn: (active) => ({
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    color: active ? "#c9a84c" : "#7fa8c9",
-    fontSize: 9,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 2,
-    padding: "3px 5px",
-    fontFamily: "'Georgia', serif",
+    background: "none", border: "none", cursor: "pointer",
+    color: active ? "#7c3aed" : "#7fa8c9", fontSize: 9,
+    display: "flex", flexDirection: "column", alignItems: "center",
+    gap: 2, padding: "3px 5px",
+  }),
+  badge: (color) => ({
+    background: color + "25", color, fontSize: 10,
+    padding: "2px 8px", borderRadius: 20, display: "inline-block",
+  }),
+  seenBtn: (seen) => ({
+    background: seen ? "#00c9a720" : "#1e3a5f",
+    color: seen ? "#00c9a7" : "#7fa8c9",
+    border: seen ? "1px solid #00c9a740" : "1px solid #1e3a5f",
+    borderRadius: 8, padding: "4px 10px", fontSize: 11,
+    cursor: "pointer", fontWeight: "bold", whiteSpace: "nowrap",
+  }),
+  statCard: (color) => ({
+    background: "#132850", border: `1px solid ${color}40`,
+    borderRadius: 14, padding: 16, flex: 1, textAlign: "center",
   }),
 };
 
-const Stars = ({ rating }) => (
-  <span>
-    {[1, 2, 3, 4, 5].map((n) => (
-      <span key={n} style={{ color: n <= rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>
-    ))}
-  </span>
-);
+const navTabs = [
+  { id: "appointments", icon: "📅", label: "Appts" },
+  { id: "patients", icon: "👥", label: "Patients" },
+  { id: "feedback", icon: "⭐", label: "Feedback" },
+  { id: "stats", icon: "📊", label: "Stats" },
+  { id: "settings", icon: "⚙️", label: "Settings" },
+];
 
-// ── Unique key for an appointment since there is no id column ──
-// We use phone + date as the stable unique identifier
-const apptKey = (a) => `${a.phone}__${a.date}__${a.visit_type}`;
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const bristolLabel = (type) => {
+  const map = { 1: "Type 1 – Constipation", 2: "Type 2 – Constipation", 3: "Type 3 – Normal", 4: "Type 4 – Normal", 5: "Type 5 – Lacking Fiber", 6: "Type 6 – Mild Diarrhea", 7: "Type 7 – Diarrhea" };
+  return map[type] || `Type ${type}`;
+};
 
-export default function MasterDoc() {
-  const [user, setUser] = useState(null);
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
+// ══════════════════════════════════════════════════════════════════════════════
+export default function App() {
+  const [screen, setScreen] = useState("login");
+  const [activeTab, setActiveTab] = useState("appointments");
 
-  const [screen, setScreen] = useState("appointments");
+  // Auth
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
-  // ── Appointments ──
+  // Data
   const [appointments, setAppointments] = useState([]);
-  const [dataLoading, setDataLoading] = useState(false);
-
-  // ── SEEN: stored as array of strings (phone__date__visit_type keys) ──
-  const [seenKeys, setSeenKeys] = useState([]);
-
-  // ── Appointment detail ──
-  const [selectedAppt, setSelectedAppt] = useState(null);
-  const [apptSymptoms, setApptSymptoms] = useState([]);
-  const [apptDetailLoading, setApptDetailLoading] = useState(false);
-
-  // ── Patients ──
   const [patients, setPatients] = useState([]);
+  const [feedbackList, setFeedbackList] = useState([]);
+  const [stats, setStats] = useState({ appts: 0, patients: 0, feedback: 0, avgRating: 0 });
+
+  // Seen appointments — stored as array of composite keys (uuid|phone+date)
+  const [seenKeys, setSeenKeys] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("md_seen") || "[]"); } catch { return []; }
+  });
+
+  // Detail screens
+  const [selectedAppt, setSelectedAppt] = useState(null);
+  const [selectedApptSymptoms, setSelectedApptSymptoms] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [patientTab, setPatientTab] = useState("complaints");
-  const [patientAppts, setPatientAppts] = useState([]);
   const [patientBristol, setPatientBristol] = useState([]);
-  const [patientSymptomLogs, setPatientSymptomLogs] = useState([]);
+  const [patientSymptoms, setPatientSymptoms] = useState([]);
   const [patientFeedback, setPatientFeedback] = useState([]);
-  const [patientLoading, setPatientLoading] = useState(false);
+  const [patientAppts, setPatientAppts] = useState([]);
+  const [patientTab, setPatientTab] = useState("bristol");
+  const [loadingPatient, setLoadingPatient] = useState(false);
 
-  // ── Feedback ──
-  const [allFeedback, setAllFeedback] = useState([]);
-  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  // Settings
+  const [settings, setSettings] = useState({
+    doctor: "Dr. Vivek Shirol", quals: "MBBS, MD, DM Gastroenterology, SGPGI",
+    clinic: "Dr. Vivek's Complete Gastro Care Clinic",
+    address: "Belagavi, Karnataka", phone: "8310417749",
+    timings: "Mon–Sat: 5:00 PM – 9:00 PM", holiday: "Sunday: Closed",
+    maps_link: "https://maps.app.goo.gl/eQvb8QB8ANJPX2pU7",
+  });
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
-  // ── Auth ──
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email === ADMIN_EMAIL) setUser(session.user);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session?.user?.email === ADMIN_EMAIL) setUser(session.user);
-      else setUser(null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // ── Load seen keys from localStorage ──
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("masterdoc_seen_v5");
-      if (saved) setSeenKeys(JSON.parse(saved));
-    } catch { setSeenKeys([]); }
-  }, []);
-
-  const isSeen = (appt) => seenKeys.includes(apptKey(appt));
-
-  const markSeen = (e, appt) => {
-    e.stopPropagation();
-    const key = apptKey(appt);
+  // ── Seen key helpers ──────────────────────────────────────────────────────
+  const getApptKey = (a) => a.uuid ? String(a.uuid) : `${a.phone}|${a.date}|${a.visit_type}`;
+  const isSeen = (a) => seenKeys.includes(getApptKey(a));
+  const markSeen = (a) => {
+    const key = getApptKey(a);
     if (seenKeys.includes(key)) return;
     const updated = [...seenKeys, key];
     setSeenKeys(updated);
-    localStorage.setItem("masterdoc_seen_v5", JSON.stringify(updated));
+    localStorage.setItem("md_seen", JSON.stringify(updated));
   };
-
-  const markUnseen = (e, appt) => {
-    e.stopPropagation();
-    const key = apptKey(appt);
-    const updated = seenKeys.filter((k) => k !== key);
+  const unmarkSeen = (a) => {
+    const key = getApptKey(a);
+    const updated = seenKeys.filter(k => k !== key);
     setSeenKeys(updated);
-    localStorage.setItem("masterdoc_seen_v5", JSON.stringify(updated));
+    localStorage.setItem("md_seen", JSON.stringify(updated));
+  };
+  const toggleSeen = (a, e) => {
+    e.stopPropagation();
+    isSeen(a) ? unmarkSeen(a) : markSeen(a);
   };
 
-  const handleLogin = async () => {
-    if (!authEmail || !authPassword) { setAuthError("Please enter email and password."); return; }
-    setAuthLoading(true); setAuthError("");
-    const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
-    setAuthLoading(false);
-    if (error) { setAuthError("❌ " + error.message); return; }
-    if (data?.user?.email !== ADMIN_EMAIL) {
-      await supabase.auth.signOut();
-      setAuthError("❌ Access denied. This app is for Dr. Vivek only.");
+  // ── Fetch appointments ────────────────────────────────────────────────────
+  const fetchAppointments = useCallback(async () => {
+    const { data } = await supabase
+      .from("appointments")
+      .select("patient_name, phone, date, visit_type, uuid, created_at")
+      .order("created_at", { ascending: false });
+    if (data) setAppointments(data);
+  }, []);
+
+  // ── Fetch patients (deduplicated from appointments by phone) ──────────────
+  const fetchPatients = useCallback(async () => {
+    const { data } = await supabase
+      .from("appointments")
+      .select("patient_name, phone, uuid")
+      .order("created_at", { ascending: false });
+    if (!data) return;
+    // Deduplicate by phone — keep first occurrence (most recent)
+    const seen = new Set();
+    const unique = [];
+    for (const row of data) {
+      const key = row.phone || row.uuid || row.patient_name;
+      if (!seen.has(key)) { seen.add(key); unique.push(row); }
     }
+    setPatients(unique);
+  }, []);
+
+  // ── Fetch feedback with names ─────────────────────────────────────────────
+  const fetchFeedback = useCallback(async () => {
+    const [{ data: fbData }, { data: profileData }, { data: apptData }] = await Promise.all([
+      supabase.from("feedback").select("id, user_id, rating, message, created_at").order("created_at", { ascending: false }),
+      supabase.from("patient_profiles").select("user_id, phone"),
+      supabase.from("appointments").select("patient_name, phone"),
+    ]);
+    if (!fbData) return;
+
+    // Build lookup maps
+    const profileByUserId = {};
+    (profileData || []).forEach(p => { profileByUserId[p.user_id] = p.phone; });
+
+    const nameByPhone = {};
+    (apptData || []).forEach(a => {
+      if (a.phone && a.patient_name) nameByPhone[a.phone] = a.patient_name;
+    });
+
+    // Also build lookup: uuid in appointments → patient_name
+    const nameByUuid = {};
+    (apptData || []).forEach(a => {});
+    // appointments has uuid column
+    const { data: apptUuidData } = await supabase.from("appointments").select("patient_name, uuid");
+    (apptUuidData || []).forEach(a => {
+      if (a.uuid && a.patient_name) nameByUuid[a.uuid] = a.patient_name;
+    });
+
+    const enriched = fbData.map(fb => {
+      let name = null;
+      // Try: feedback.user_id → appointments.uuid → patient_name
+      if (fb.user_id && nameByUuid[fb.user_id]) {
+        name = nameByUuid[fb.user_id];
+      }
+      // Try: feedback.user_id → patient_profiles.phone → appointments.patient_name
+      if (!name && fb.user_id && profileByUserId[fb.user_id]) {
+        const phone = profileByUserId[fb.user_id];
+        name = nameByPhone[phone] || null;
+      }
+      return { ...fb, patient_name: name || "Unknown Patient" };
+    });
+
+    setFeedbackList(enriched);
+  }, []);
+
+  // ── Fetch stats ───────────────────────────────────────────────────────────
+  const fetchStats = useCallback(async () => {
+    const [{ data: appts }, { data: fb }, { data: prof }] = await Promise.all([
+      supabase.from("appointments").select("id", { count: "exact" }),
+      supabase.from("feedback").select("rating"),
+      supabase.from("patient_profiles").select("user_id", { count: "exact" }),
+    ]);
+    const apptCount = appts?.length || 0;
+    const patCount = prof?.length || 0;
+    const fbCount = fb?.length || 0;
+    const avgRating = fbCount > 0 ? (fb.reduce((s, f) => s + (f.rating || 0), 0) / fbCount).toFixed(1) : "—";
+    setStats({ appts: apptCount, patients: patCount, feedback: fbCount, avgRating });
+  }, []);
+
+  // ── Fetch settings ────────────────────────────────────────────────────────
+  const fetchSettings = useCallback(async () => {
+    const { data } = await supabase.from("clinic_settings").select("key, value");
+    if (data && data.length > 0) {
+      const obj = {};
+      data.forEach(r => { obj[r.key] = r.value; });
+      setSettings(prev => ({ ...prev, ...obj }));
+    }
+  }, []);
+
+  // ── Open patient detail ───────────────────────────────────────────────────
+  const openPatient = async (patient) => {
+    setSelectedPatient(patient);
+    setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
+    setPatientTab("bristol");
+    setScreen("patientDetail");
+    setLoadingPatient(true);
+
+    // Resolve user_id: prefer appointments.uuid, else look up via patient_profiles.phone
+    let userId = patient.uuid || null;
+
+    if (!userId && patient.phone) {
+      const { data: prof } = await supabase
+        .from("patient_profiles")
+        .select("user_id")
+        .eq("phone", patient.phone)
+        .single();
+      userId = prof?.user_id || null;
+    }
+
+    // Fetch all appointments for this patient by phone
+    const { data: appts } = await supabase
+      .from("appointments")
+      .select("patient_name, phone, date, visit_type, uuid, created_at")
+      .eq("phone", patient.phone)
+      .order("created_at", { ascending: false });
+    setPatientAppts(appts || []);
+
+    if (userId) {
+      const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
+        supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
+        supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
+        supabase.from("feedback").select("rating, message, created_at").eq("user_id", userId).order("created_at", { ascending: false }),
+      ]);
+      setPatientBristol(bristol || []);
+      setPatientSymptoms(symptoms || []);
+      setPatientFeedback(feedback || []);
+    }
+
+    setLoadingPatient(false);
+  };
+
+  // ── Open appointment detail ───────────────────────────────────────────────
+  const openApptDetail = async (appt) => {
+    setSelectedAppt(appt);
+    setSelectedApptSymptoms([]);
+    setScreen("apptDetail");
+    markSeen(appt);
+
+    // Fetch symptom logs for this patient
+    const userId = appt.uuid || null;
+    if (userId) {
+      const { data } = await supabase
+        .from("symptom_logs")
+        .select("symptoms, logged_at")
+        .eq("user_id", userId)
+        .order("logged_at", { ascending: false })
+        .limit(5);
+      setSelectedApptSymptoms(data || []);
+    } else if (appt.phone) {
+      // Fallback: look up via patient_profiles
+      const { data: prof } = await supabase
+        .from("patient_profiles")
+        .select("user_id")
+        .eq("phone", appt.phone)
+        .single();
+      if (prof?.user_id) {
+        const { data } = await supabase
+          .from("symptom_logs")
+          .select("symptoms, logged_at")
+          .eq("user_id", prof.user_id)
+          .order("logged_at", { ascending: false })
+          .limit(5);
+        setSelectedApptSymptoms(data || []);
+      }
+    }
+  };
+
+  // ── Save settings ─────────────────────────────────────────────────────────
+  const saveSettings = async () => {
+    const entries = Object.entries(settings).map(([key, value]) => ({ key, value }));
+    for (const entry of entries) {
+      await supabase.from("clinic_settings").upsert(entry, { onConflict: "key" });
+    }
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 2000);
+  };
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  const handleLogin = async () => {
+    setLoginLoading(true); setLoginError("");
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+    setLoginLoading(false);
+    if (error) { setLoginError("❌ " + error.message); return; }
+    setScreen("main");
+    setActiveTab("appointments");
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setUser(null);
+    setScreen("login"); setLoginEmail(""); setLoginPassword("");
   };
 
-  // ── Fetch appointments (all columns) ──
-  const fetchAppointments = useCallback(async () => {
-    setDataLoading(true);
-    const { data } = await supabase
-      .from("appointments")
-      .select("*")
-      .order("date", { ascending: false });
-    if (data) setAppointments(data);
-    setDataLoading(false);
-  }, []);
-
-  // ── PATIENTS FIX: deduplicate appointments by phone to get unique patients ──
-  const fetchPatients = useCallback(async () => {
-    setDataLoading(true);
-    const { data } = await supabase
-      .from("appointments")
-      .select("patient_name, phone")
-      .order("date", { ascending: false });
-
-    if (data) {
-      const seenPhones = new Set();
-      const unique = [];
-      for (const row of data) {
-        const phone = (row.phone || "").trim();
-        if (phone && !seenPhones.has(phone)) {
-          seenPhones.add(phone);
-          unique.push({ patient_name: row.patient_name, phone });
-        }
-      }
-      setPatients(unique);
-    }
-    setDataLoading(false);
-  }, []);
-
-  // ── FEEDBACK FIX: feedback has user_id → match via patient_profiles ──
-  const fetchAllFeedback = useCallback(async () => {
-    setFeedbackLoading(true);
-
-    const { data: fbData } = await supabase
-      .from("feedback")
-      .select("*")
-      .order("submitted_at", { ascending: false });
-
-    if (!fbData || fbData.length === 0) {
-      setAllFeedback([]);
-      setFeedbackLoading(false);
-      return;
-    }
-
-    // Get patient_profiles to resolve user_id → name
-    const { data: profiles } = await supabase
-      .from("patient_profiles")
-      .select("*");
-
-    // Get all appointments to cross-reference phone if needed
-    const { data: allAppts } = await supabase
-      .from("appointments")
-      .select("patient_name, phone");
-
-    const enriched = fbData.map((fb) => {
-      let patientName = null;
-
-      // Step 1: match user_id in patient_profiles → get any name field
-      if (profiles && fb.user_id) {
-        const profile = profiles.find((p) => p.user_id === fb.user_id);
-        if (profile) {
-          // Try every possible name column in patient_profiles
-          patientName =
-            profile.patient_name ||
-            profile.full_name ||
-            profile.name ||
-            profile.display_name ||
-            null;
-
-          // Step 2: if profile found but no name, use their phone to find name in appointments
-          if (!patientName && profile.phone && allAppts) {
-            const appt = allAppts.find((a) => a.phone === profile.phone);
-            if (appt) patientName = appt.patient_name;
-          }
-        }
-      }
-
-      // Step 3: try matching fb.phone directly in appointments
-      if (!patientName && fb.phone && allAppts) {
-        const appt = allAppts.find((a) => a.phone === fb.phone);
-        if (appt) patientName = appt.patient_name;
-      }
-
-      return { ...fb, patientName: patientName || "Patient" };
+  // ── Effects ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email === DOCTOR_EMAIL) setScreen("main");
     });
-
-    setAllFeedback(enriched);
-    setFeedbackLoading(false);
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    if (screen === "appointments") fetchAppointments();
-    if (screen === "patients") fetchPatients();
-    if (screen === "feedback") fetchAllFeedback();
-    if (screen === "stats") { fetchAppointments(); fetchPatients(); }
-  }, [user, screen, fetchAppointments, fetchPatients, fetchAllFeedback]);
+    if (screen !== "main") return;
+    fetchAppointments();
+    fetchPatients();
+    fetchFeedback();
+    fetchStats();
+    fetchSettings();
+  }, [screen, fetchAppointments, fetchPatients, fetchFeedback, fetchStats, fetchSettings]);
 
-  // ── Open appointment detail ──
-  // Appointments has no user_id, so we fetch symptom_logs by phone if possible
-  const openApptDetail = async (appt) => {
-    setSelectedAppt(appt);
-    setApptSymptoms([]);
-    setApptDetailLoading(true);
-
-    // Try to find user_id from patient_profiles by phone
-    let symptoms = [];
-    if (appt.phone) {
-      const { data: profile } = await supabase
-        .from("patient_profiles")
-        .select("user_id")
-        .eq("phone", appt.phone)
-        .maybeSingle();
-
-      if (profile && profile.user_id) {
-        const { data } = await supabase
-          .from("symptom_logs")
-          .select("*")
-          .eq("user_id", profile.user_id)
-          .order("logged_at", { ascending: false });
-        if (data) symptoms = data;
-      }
-    }
-
-    // Fallback: show most recent symptom logs if no match
-    if (symptoms.length === 0) {
-      const { data } = await supabase
-        .from("symptom_logs")
-        .select("*")
-        .order("logged_at", { ascending: false })
-        .limit(10);
-      if (data) symptoms = data;
-    }
-
-    setApptSymptoms(symptoms);
-    setApptDetailLoading(false);
-  };
-
-  // ── Open patient profile ──
-  const openPatient = async (patient) => {
-    setPatientLoading(true);
-    setSelectedPatient(patient);
-    setPatientTab("complaints");
-    setPatientAppts([]);
-    setPatientBristol([]);
-    setPatientSymptomLogs([]);
-    setPatientFeedback([]);
-
-    // All appointments for this patient by phone
-    const { data: appts } = await supabase
-      .from("appointments")
-      .select("*")
-      .eq("phone", patient.phone)
-      .order("date", { ascending: false });
-    setPatientAppts(appts || []);
-
-    // Find user_id from patient_profiles by phone
-    const { data: profile } = await supabase
-      .from("patient_profiles")
-      .select("user_id")
-      .eq("phone", patient.phone)
-      .maybeSingle();
-
-    if (profile && profile.user_id) {
-      const uid = profile.user_id;
-
-      const { data: symData } = await supabase
-        .from("symptom_logs")
-        .select("*")
-        .eq("user_id", uid)
-        .order("logged_at", { ascending: false });
-      setPatientSymptomLogs(symData || []);
-
-      const { data: bristolData } = await supabase
-        .from("bristol_logs")
-        .select("*")
-        .eq("user_id", uid)
-        .order("logged_at", { ascending: false });
-      setPatientBristol(bristolData || []);
-
-      const { data: fbData } = await supabase
-        .from("feedback")
-        .select("*")
-        .eq("user_id", uid)
-        .order("submitted_at", { ascending: false });
-      setPatientFeedback(fbData || []);
-    }
-
-    setPatientLoading(false);
-  };
-
-  const bristolTag = (type) => {
-    if (type <= 2) return { label: "Constipation", color: "#ef4444" };
-    if (type <= 4) return { label: "Normal", color: "#00c9a7" };
-    if (type === 5) return { label: "Lacking Fiber", color: "#f59e0b" };
-    if (type === 6) return { label: "Mild Diarrhea", color: "#f97316" };
-    return { label: "Diarrhea", color: "#ef4444" };
-  };
-
-  const navScreens = [
-    { id: "appointments", icon: "📅", label: "Appts" },
-    { id: "patients", icon: "👥", label: "Patients" },
-    { id: "feedback", icon: "⭐", label: "Feedback" },
-    { id: "stats", icon: "📊", label: "Stats" },
-  ];
-
-  // ── LOGIN ──
-  if (!user) {
+  // ══════════════════════════════════════════════════════════════════════════
+  // LOGIN SCREEN
+  // ══════════════════════════════════════════════════════════════════════════
+  if (screen === "login") {
     return (
       <div style={s.app}>
-        <div style={s.navbar}>
-          <div>
-            <div style={s.logo}>⚕️ MasterDoc</div>
-            <div style={{ color: "#7fa8c9", fontSize: 10 }}>Dr. Vivek Shirol — Admin Portal</div>
-          </div>
-        </div>
+        <div style={s.navbar}><div style={s.logo}>🩺 MasterDoc</div></div>
         <div style={s.page}>
-          <div style={{ textAlign: "center", padding: "30px 0 28px" }}>
-            <div style={{ fontSize: 64, marginBottom: 12 }}>🩺</div>
-            <h2 style={{ color: "#c9a84c", fontSize: 22, margin: "0 0 6px" }}>Doctor Portal</h2>
-            <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>Restricted access — Dr. Vivek Shirol only</p>
+          <div style={{ textAlign: "center", padding: "30px 0 24px" }}>
+            <div style={{ fontSize: 56, marginBottom: 12 }}>👨‍⚕️</div>
+            <h2 style={{ color: "#7c3aed", fontSize: 22, margin: "0 0 6px" }}>Doctor Portal</h2>
+            <p style={{ color: "#7fa8c9", fontSize: 13 }}>Dr. Vivek Shirol — Secure Login</p>
           </div>
-          <label style={s.label}>Email Address</label>
-          <input style={s.input} placeholder="your@email.com" type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
+          <label style={s.label}>Email</label>
+          <input style={s.input} type="email" placeholder="doctor@email.com" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} />
           <label style={s.label}>Password</label>
-          <input style={s.input} placeholder="Password" type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} />
-          {authError && (
-            <div style={{ background: "#ef444420", border: "1px solid #ef444440", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: "#ef4444" }}>
-              {authError}
-            </div>
-          )}
-          <button style={s.btn} onClick={handleLogin} disabled={authLoading}>
-            {authLoading ? "Signing in..." : "🔐 Sign In to MasterDoc"}
-          </button>
-          <div style={{ ...s.card, marginTop: 24, textAlign: "center" }}>
-            <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>🔒 This portal is exclusively for Dr. Vivek Shirol.</p>
-          </div>
+          <input style={s.input} type="password" placeholder="Password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} />
+          {loginError && <div style={{ background: "#ef444420", border: "1px solid #ef444440", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "#ef4444" }}>{loginError}</div>}
+          <button style={s.btn} onClick={handleLogin} disabled={loginLoading}>{loginLoading ? "Signing in..." : "🔐 Sign In to MasterDoc"}</button>
         </div>
       </div>
     );
   }
 
-  // ── APPOINTMENT DETAIL ──
-  if (selectedAppt) {
+  // ══════════════════════════════════════════════════════════════════════════
+  // APPOINTMENT DETAIL SCREEN
+  // ══════════════════════════════════════════════════════════════════════════
+  if (screen === "apptDetail" && selectedAppt) {
     return (
       <div style={s.app}>
         <div style={s.navbar}>
-          <div>
-            <div style={s.logo}>⚕️ MasterDoc</div>
-            <div style={{ color: "#7fa8c9", fontSize: 10 }}>Appointment Detail</div>
-          </div>
-          <button style={{ background: "none", border: "none", color: "#c9a84c", cursor: "pointer", fontSize: 13 }}
-            onClick={() => setSelectedAppt(null)}>← Back</button>
+          <div style={s.logo}>📋 Appointment Detail</div>
+          <button style={{ background: "none", border: "none", color: "#7fa8c9", cursor: "pointer", fontSize: 13 }} onClick={() => setScreen("main")}>← Back</button>
         </div>
         <div style={s.page}>
-
-          <div style={{ ...s.card, borderLeft: "3px solid #c9a84c", marginBottom: 16 }}>
-            <p style={{ color: "#c9a84c", fontWeight: "bold", fontSize: 16, margin: "0 0 10px" }}>
-              👤 {selectedAppt.patient_name}
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>📞 {selectedAppt.phone}</p>
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>
-                📅 Requested Date: <span style={{ color: "#e8f4f8", fontWeight: "bold" }}>{selectedAppt.date}</span>
-              </p>
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>
-                🏥 Visit Type: <span style={{ color: "#c9a84c" }}>{selectedAppt.visit_type}</span>
-              </p>
-              {selectedAppt.created_at && (
-                <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>
-                  🕐 Booked: {new Date(selectedAppt.created_at).toLocaleDateString()} at {new Date(selectedAppt.created_at).toLocaleTimeString()}
-                </p>
-              )}
-            </div>
+          <div style={{ ...s.card, borderLeft: "3px solid #7c3aed" }}>
+            <p style={{ color: "#7c3aed", fontSize: 11, fontWeight: "bold", marginBottom: 8 }}>PATIENT</p>
+            <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 18, margin: "0 0 4px" }}>👤 {selectedAppt.patient_name}</p>
+            <p style={{ color: "#7fa8c9", fontSize: 13, margin: "0 0 2px" }}>📞 {selectedAppt.phone}</p>
+            <p style={{ color: "#7fa8c9", fontSize: 13, margin: "0 0 2px" }}>📅 {selectedAppt.date}</p>
+            <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>🏷️ {selectedAppt.visit_type}</p>
           </div>
 
-          {/* Complaints */}
-          <div style={{ ...s.card, borderLeft: "3px solid #f59e0b", marginBottom: 16 }}>
-            <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: "bold", margin: "0 0 8px", letterSpacing: 1 }}>
-              📝 COMPLAINTS / REASON FOR VISIT
-            </p>
-            {(selectedAppt.complaints || selectedAppt.reason || selectedAppt.notes) ? (
-              <p style={{ color: "#e8f4f8", fontSize: 14, margin: 0, lineHeight: 1.6 }}>
-                {selectedAppt.complaints || selectedAppt.reason || selectedAppt.notes}
-              </p>
-            ) : (
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No complaint text recorded for this appointment.</p>
-            )}
-          </div>
-
-          {/* Symptom logs */}
-          <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>
-            🩺 SYMPTOM LOGS
-          </p>
-          {apptDetailLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
-          {!apptDetailLoading && apptSymptoms.length === 0 && (
-            <div style={{ ...s.card, textAlign: "center" }}>
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptom logs found for this patient.</p>
-            </div>
-          )}
-          {apptSymptoms.map((log, i) => (
-            <div key={i} style={{ ...s.card, borderLeft: "3px solid #00c9a7" }}>
-              <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", margin: "0 0 8px" }}>
-                {new Date(log.logged_at).toLocaleDateString()} at {new Date(log.logged_at).toLocaleTimeString()}
-              </p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {(log.symptoms || []).map((sym, j) => (
-                  <span key={j} style={{ background: "#00c9a720", color: "#00c9a7", fontSize: 11, padding: "3px 10px", borderRadius: 20, border: "1px solid #00c9a740" }}>
-                    {sym}
-                  </span>
-                ))}
+          <p style={{ color: "#7fa8c9", fontSize: 11, fontWeight: "bold", marginBottom: 8, marginTop: 4 }}>🩺 SYMPTOMS / COMPLAINTS</p>
+          {selectedApptSymptoms.length === 0 ? (
+            <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptoms logged for this patient yet.</p></div>
+          ) : (
+            selectedApptSymptoms.map((log, i) => (
+              <div key={i} style={s.card}>
+                <p style={{ color: "#7fa8c9", fontSize: 10, marginBottom: 6 }}>{new Date(log.logged_at).toLocaleString()}</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {(log.symptoms || []).map((sym, j) => (
+                    <span key={j} style={s.badge("#00c9a7")}>{sym}</span>
+                  ))}
+                </div>
               </div>
-              {log.notes && <p style={{ color: "#e8f4f8", fontSize: 12, margin: "8px 0 0", fontStyle: "italic" }}>{log.notes}</p>}
-            </div>
-          ))}
+            ))
+          )}
+
+          <button style={s.btnBack} onClick={() => setScreen("main")}>← Back to Appointments</button>
         </div>
       </div>
     );
   }
 
-  // ── PATIENT PROFILE ──
-  if (selectedPatient) {
+  // ══════════════════════════════════════════════════════════════════════════
+  // PATIENT DETAIL SCREEN
+  // ══════════════════════════════════════════════════════════════════════════
+  if (screen === "patientDetail" && selectedPatient) {
     const tabs = [
-      { id: "complaints", label: "📝 Complaints", color: "#f59e0b" },
-      { id: "bristol", label: "💧 Bristol", color: "#3b82f6" },
-      { id: "feedback", label: "⭐ Feedback", color: "#c9a84c" },
+      { id: "bristol", label: "💧 Bristol" },
+      { id: "symptoms", label: "🩺 Symptoms" },
+      { id: "feedback", label: "⭐ Feedback" },
+      { id: "appts", label: "📅 Appointments" },
     ];
-
     return (
       <div style={s.app}>
         <div style={s.navbar}>
-          <div>
-            <div style={s.logo}>⚕️ MasterDoc</div>
-            <div style={{ color: "#7fa8c9", fontSize: 10 }}>Patient Profile</div>
-          </div>
-          <button style={{ background: "none", border: "none", color: "#c9a84c", cursor: "pointer", fontSize: 13 }}
-            onClick={() => setSelectedPatient(null)}>← Back</button>
+          <div style={s.logo}>👤 {selectedPatient.patient_name}</div>
+          <button style={{ background: "none", border: "none", color: "#7fa8c9", cursor: "pointer", fontSize: 13 }} onClick={() => setScreen("main")}>← Back</button>
         </div>
         <div style={s.page}>
-
-          {/* Patient header */}
-          <div style={{ ...s.card, borderLeft: "3px solid #c9a84c", marginBottom: 16 }}>
-            <p style={{ color: "#c9a84c", fontWeight: "bold", fontSize: 16, margin: "0 0 6px" }}>
-              👤 {selectedPatient.patient_name}
-            </p>
-            <p style={{ color: "#7fa8c9", fontSize: 13, margin: "0 0 8px" }}>📞 {selectedPatient.phone}</p>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <span style={{ color: "#7fa8c9", fontSize: 12 }}>
-                Appts: <span style={{ color: "#c9a84c", fontWeight: "bold" }}>{patientAppts.length}</span>
-              </span>
-              <span style={{ color: "#7fa8c9", fontSize: 12 }}>
-                Symptom logs: <span style={{ color: "#00c9a7", fontWeight: "bold" }}>{patientSymptomLogs.length}</span>
-              </span>
-              <span style={{ color: "#7fa8c9", fontSize: 12 }}>
-                Bristol: <span style={{ color: "#3b82f6", fontWeight: "bold" }}>{patientBristol.length}</span>
-              </span>
-              <span style={{ color: "#7fa8c9", fontSize: 12 }}>
-                Feedback: <span style={{ color: "#f59e0b", fontWeight: "bold" }}>{patientFeedback.length}</span>
-              </span>
-            </div>
+          <div style={{ ...s.card, borderLeft: "3px solid #7c3aed", marginBottom: 16 }}>
+            <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 16, margin: "0 0 3px" }}>👤 {selectedPatient.patient_name}</p>
+            <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>📞 {selectedPatient.phone}</p>
           </div>
 
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            {tabs.map(tab => (
-              <button key={tab.id} onClick={() => setPatientTab(tab.id)}
-                style={{
-                  flex: 1,
-                  background: patientTab === tab.id ? tab.color + "20" : "transparent",
-                  border: patientTab === tab.id ? `2px solid ${tab.color}` : "1px solid #1e3a5f",
-                  color: patientTab === tab.id ? tab.color : "#7fa8c9",
-                  padding: "10px 4px",
-                  borderRadius: 10,
-                  fontSize: 11,
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  fontFamily: "'Georgia', serif",
-                }}>
-                {tab.label}
+          {/* Tab switcher */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto" }}>
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setPatientTab(t.id)}
+                style={{ background: patientTab === t.id ? "#7c3aed" : "#1e3a5f", color: patientTab === t.id ? "#fff" : "#7fa8c9", border: "none", borderRadius: 20, padding: "7px 14px", fontSize: 12, fontWeight: "bold", cursor: "pointer", whiteSpace: "nowrap" }}>
+                {t.label}
               </button>
             ))}
           </div>
 
-          {patientLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
+          {loadingPatient && <p style={{ color: "#7fa8c9", fontSize: 13 }}>Loading...</p>}
 
-          {/* COMPLAINTS TAB */}
-          {patientTab === "complaints" && !patientLoading && (
-            <>
-              <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>
-                APPOINTMENT HISTORY & COMPLAINTS
-              </p>
-              {patientAppts.length === 0 && (
-                <div style={{ ...s.card, textAlign: "center" }}>
-                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No appointments found for this patient.</p>
+          {/* Bristol tab */}
+          {patientTab === "bristol" && !loadingPatient && (
+            patientBristol.length === 0
+              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No Bristol logs found for this patient.</p></div>
+              : patientBristol.map((b, i) => (
+                <div key={i} style={s.card}>
+                  <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>{bristolLabel(b.stool_type)}</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>{new Date(b.logged_at).toLocaleString()}</p>
                 </div>
-              )}
-              {patientAppts.map((appt, i) => (
+              ))
+          )}
+
+          {/* Symptoms tab */}
+          {patientTab === "symptoms" && !loadingPatient && (
+            patientSymptoms.length === 0
+              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No symptom logs found for this patient.</p></div>
+              : patientSymptoms.map((log, i) => (
+                <div key={i} style={s.card}>
+                  <p style={{ color: "#7fa8c9", fontSize: 10, marginBottom: 6 }}>{new Date(log.logged_at).toLocaleString()}</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {(log.symptoms || []).map((sym, j) => (
+                      <span key={j} style={s.badge("#00c9a7")}>{sym}</span>
+                    ))}
+                  </div>
+                </div>
+              ))
+          )}
+
+          {/* Feedback tab */}
+          {patientTab === "feedback" && !loadingPatient && (
+            patientFeedback.length === 0
+              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No feedback submitted by this patient yet.</p></div>
+              : patientFeedback.map((fb, i) => (
                 <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={s.badge("#c9a84c")}>{appt.visit_type}</span>
-                    <span style={{ color: "#7fa8c9", fontSize: 11 }}>📅 {appt.date}</span>
+                  <div style={{ display: "flex", gap: 2, marginBottom: 6 }}>
+                    {[1,2,3,4,5].map(star => (
+                      <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 20 }}>★</span>
+                    ))}
+                    <span style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 14, marginLeft: 6 }}>{fb.rating}/5</span>
                   </div>
-                  {(appt.complaints || appt.reason || appt.notes) ? (
-                    <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5 }}>
-                      📝 {appt.complaints || appt.reason || appt.notes}
-                    </p>
-                  ) : (
-                    <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 6px" }}>
-                      No complaint text recorded for this visit.
-                    </p>
-                  )}
-                  {appt.created_at && (
-                    <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>
-                      Booked: {new Date(appt.created_at).toLocaleDateString()}
-                    </p>
-                  )}
+                  {fb.message && <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 4px", lineHeight: 1.5 }}>"{fb.message}"</p>}
+                  {fb.created_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.created_at).toLocaleString()}</p>}
                 </div>
-              ))}
-
-              {/* Symptom logs below appointments */}
-              {patientSymptomLogs.length > 0 && (
-                <>
-                  <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", margin: "16px 0 10px", letterSpacing: 1 }}>
-                    🩺 SYMPTOM LOGS
-                  </p>
-                  {patientSymptomLogs.map((log, i) => (
-                    <div key={i} style={{ ...s.card, borderLeft: "3px solid #00c9a7" }}>
-                      <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", margin: "0 0 8px" }}>
-                        {new Date(log.logged_at).toLocaleDateString()} at {new Date(log.logged_at).toLocaleTimeString()}
-                      </p>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {(log.symptoms || []).map((sym, j) => (
-                          <span key={j} style={{ background: "#00c9a720", color: "#00c9a7", fontSize: 11, padding: "3px 10px", borderRadius: 20, border: "1px solid #00c9a740" }}>
-                            {sym}
-                          </span>
-                        ))}
-                      </div>
-                      {log.notes && <p style={{ color: "#e8f4f8", fontSize: 12, margin: "8px 0 0", fontStyle: "italic" }}>{log.notes}</p>}
-                    </div>
-                  ))}
-                </>
-              )}
-            </>
+              ))
           )}
 
-          {/* BRISTOL TAB */}
-          {patientTab === "bristol" && !patientLoading && (
-            <>
-              <p style={{ color: "#3b82f6", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>
-                BRISTOL STOOL LOGS
-              </p>
-              {patientBristol.length === 0 && (
-                <div style={{ ...s.card, textAlign: "center" }}>
-                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No Bristol logs found for this patient.</p>
+          {/* Appointments tab */}
+          {patientTab === "appts" && !loadingPatient && (
+            patientAppts.length === 0
+              ? <div style={s.card}><p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No appointments found.</p></div>
+              : patientAppts.map((a, i) => (
+                <div key={i} style={s.card}>
+                  <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 13, margin: "0 0 3px" }}>📅 {a.date}</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>🏷️ {a.visit_type}</p>
+                  {a.created_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>Booked: {new Date(a.created_at).toLocaleString()}</p>}
                 </div>
-              )}
-              {patientBristol.map((log, i) => {
-                const { label, color } = bristolTag(log.stool_type);
-                return (
-                  <div key={i} style={{ ...s.card, borderLeft: `3px solid ${color}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <span style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14 }}>Type {log.stool_type}</span>
-                        <span style={{ ...s.badge(color), marginLeft: 8 }}>{label}</span>
-                      </div>
-                      <span style={{ color: "#7fa8c9", fontSize: 11 }}>
-                        {new Date(log.logged_at).toLocaleDateString()}{" "}
-                        {new Date(log.logged_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </>
+              ))
           )}
 
-          {/* FEEDBACK TAB */}
-          {patientTab === "feedback" && !patientLoading && (
-            <>
-              <p style={{ color: "#c9a84c", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>
-                ⭐ FEEDBACK & RATINGS
-              </p>
-              {patientFeedback.length === 0 && (
-                <div style={{ ...s.card, textAlign: "center" }}>
-                  <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No feedback submitted by this patient yet.</p>
-                </div>
-              )}
-              {patientFeedback.map((fb, i) => (
-                <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <Stars rating={fb.rating} />
-                    <span style={{ color: "#7fa8c9", fontSize: 11 }}>
-                      {fb.submitted_at ? new Date(fb.submitted_at).toLocaleDateString() : ""}
-                    </span>
-                  </div>
-                  <p style={{ color: "#c9a84c", fontSize: 12, margin: "0 0 6px" }}>Rating: {fb.rating}/5</p>
-                  {fb.message ? (
-                    <p style={{ color: "#e8f4f8", fontSize: 13, margin: "8px 0 0", lineHeight: 1.6, fontStyle: "italic", borderTop: "1px solid #1e3a5f", paddingTop: 8 }}>
-                      "{fb.message}"
-                    </p>
-                  ) : (
-                    <p style={{ color: "#7fa8c9", fontSize: 12, margin: "8px 0 0", borderTop: "1px solid #1e3a5f", paddingTop: 8 }}>
-                      No written message.
-                    </p>
-                  )}
-                </div>
-              ))}
-            </>
-          )}
+          <button style={s.btnBack} onClick={() => setScreen("main")}>← Back to Patients</button>
         </div>
       </div>
     );
   }
 
-  // ── MAIN APP ──
+  // ══════════════════════════════════════════════════════════════════════════
+  // MAIN APP
+  // ══════════════════════════════════════════════════════════════════════════
   return (
     <div style={s.app}>
       <div style={s.navbar}>
         <div>
-          <div style={s.logo}>⚕️ MasterDoc</div>
-          <div style={{ color: "#7fa8c9", fontSize: 10 }}>Dr. Vivek Shirol — Admin Portal</div>
+          <div style={s.logo}>🩺 MasterDoc</div>
+          <div style={{ color: "#7fa8c9", fontSize: 10 }}>Dr. Vivek Shirol — Admin</div>
         </div>
-        <button style={{ background: "none", border: "none", color: "#7fa8c9", cursor: "pointer", fontSize: 12 }}
-          onClick={handleLogout}>Sign Out</button>
+        <button style={{ background: "none", border: "1px solid #7c3aed40", color: "#7fa8c9", padding: "5px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer" }} onClick={handleLogout}>Logout</button>
       </div>
 
-      {/* ── APPOINTMENTS ── */}
-      {screen === "appointments" && (
+      {/* ── APPOINTMENTS TAB ── */}
+      {activeTab === "appointments" && (
         <div style={s.page}>
-          <h2 style={s.title}>📅 Appointments</h2>
-          <p style={s.subtitle}>Tap a card to view details · Tap ✅ to mark seen</p>
-          {dataLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
-
-          <p style={{ color: "#ef4444", fontSize: 11, fontWeight: "bold", marginBottom: 10, letterSpacing: 1 }}>🔴 PENDING</p>
-          {appointments.filter(a => !isSeen(a)).length === 0 && !dataLoading && (
-            <div style={{ ...s.card, textAlign: "center" }}>
-              <p style={{ color: "#00c9a7", fontSize: 13, margin: 0 }}>✅ All appointments seen!</p>
-            </div>
-          )}
-          {appointments.filter(a => !isSeen(a)).map((appt, i) => (
-            <div key={i}
-              onClick={() => openApptDetail(appt)}
-              style={{ ...s.card, borderLeft: "3px solid #ef4444", cursor: "pointer" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                <div>
-                  <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>👤 {appt.patient_name}</p>
-                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📅 {appt.date}</p>
-                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 6px" }}>📞 {appt.phone}</p>
-                  <span style={s.badge("#c9a84c")}>{appt.visit_type}</span>
+          <h2 style={s.title}>Appointments 📅</h2>
+          <p style={s.subtitle}>{appointments.length} total · Tap any row to view details</p>
+          {appointments.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No appointments yet.</p></div>}
+          {appointments.map((a, i) => (
+            <div key={i} onClick={() => openApptDetail(a)}
+              style={{ ...s.card, cursor: "pointer", borderLeft: isSeen(a) ? "3px solid #00c9a7" : "3px solid #7c3aed", opacity: isSeen(a) ? 0.75 : 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>👤 {a.patient_name}</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📞 {a.phone}</p>
+                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📅 {a.date} · {a.visit_type}</p>
                 </div>
-                <button
-                  style={{ background: "#00c9a720", color: "#00c9a7", border: "1px solid #00c9a750", padding: "8px 12px", borderRadius: 10, fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "'Georgia', serif", flexShrink: 0 }}
-                  onClick={(e) => markSeen(e, appt)}>
-                  ✅ Seen
+                <button style={s.seenBtn(isSeen(a))} onClick={(e) => toggleSeen(a, e)}>
+                  {isSeen(a) ? "✓ Seen" : "Mark Seen"}
                 </button>
               </div>
-              <p style={{ color: "#c9a84c", fontSize: 10, margin: 0 }}>Tap to view details →</p>
             </div>
           ))}
-
-          {appointments.filter(a => isSeen(a)).length > 0 && (
-            <>
-              <p style={{ color: "#00c9a7", fontSize: 11, fontWeight: "bold", marginBottom: 10, marginTop: 16, letterSpacing: 1 }}>✅ SEEN</p>
-              {appointments.filter(a => isSeen(a)).map((appt, i) => (
-                <div key={i}
-                  onClick={() => openApptDetail(appt)}
-                  style={{ ...s.card, borderLeft: "3px solid #00c9a7", opacity: 0.7, cursor: "pointer" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>👤 {appt.patient_name}</p>
-                      <p style={{ color: "#7fa8c9", fontSize: 12, margin: "0 0 2px" }}>📅 {appt.date} · {appt.visit_type}</p>
-                      <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📞 {appt.phone}</p>
-                    </div>
-                    <button
-                      style={{ background: "transparent", color: "#7fa8c9", border: "1px solid #1e3a5f", padding: "6px 10px", borderRadius: 10, fontSize: 11, cursor: "pointer", fontFamily: "'Georgia', serif" }}
-                      onClick={(e) => markUnseen(e, appt)}>
-                      Undo
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-          <button style={{ ...s.btn, marginTop: 20 }} onClick={fetchAppointments}>🔄 Refresh</button>
         </div>
       )}
 
-      {/* ── PATIENTS ── */}
-      {screen === "patients" && (
+      {/* ── PATIENTS TAB ── */}
+      {activeTab === "patients" && (
         <div style={s.page}>
-          <h2 style={s.title}>👥 Patient Profiles</h2>
-          <p style={s.subtitle}>Tap a patient to view complaints, Bristol logs & feedback</p>
-          {dataLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading...</p>}
-          {patients.length === 0 && !dataLoading && (
-            <div style={{ ...s.card, textAlign: "center" }}>
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: "0 0 6px" }}>No patients found.</p>
-              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Patients appear here once they book an appointment.</p>
-            </div>
-          )}
+          <h2 style={s.title}>Patients 👥</h2>
+          <p style={s.subtitle}>{patients.length} unique patients · Tap to view full profile</p>
+          {patients.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No patients found.</p></div>}
           {patients.map((p, i) => (
-            <div key={i}
-              style={{ ...s.card, borderLeft: "3px solid #c9a84c", cursor: "pointer" }}
-              onClick={() => openPatient(p)}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 15, margin: "0 0 4px" }}>👤 {p.patient_name}</p>
-                  <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📞 {p.phone}</p>
-                </div>
-                <span style={{ color: "#c9a84c", fontSize: 22 }}>›</span>
+            <div key={i} onClick={() => openPatient(p)}
+              style={{ ...s.card, cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#7c3aed25", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>👤</div>
+              <div style={{ flex: 1 }}>
+                <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: "0 0 3px" }}>{p.patient_name}</p>
+                <p style={{ color: "#7fa8c9", fontSize: 12, margin: 0 }}>📞 {p.phone}</p>
               </div>
+              <span style={{ color: "#7c3aed", fontSize: 18 }}>›</span>
             </div>
           ))}
-          <button style={{ ...s.btn, marginTop: 8 }} onClick={fetchPatients}>🔄 Refresh</button>
         </div>
       )}
 
-      {/* ── FEEDBACK ── */}
-      {screen === "feedback" && (
+      {/* ── FEEDBACK TAB ── */}
+      {activeTab === "feedback" && (
         <div style={s.page}>
-          <h2 style={s.title}>⭐ Patient Feedback</h2>
-          <p style={s.subtitle}>All ratings and messages from your patients</p>
-          {feedbackLoading && <p style={{ color: "#7fa8c9", textAlign: "center" }}>Loading feedback...</p>}
-          {allFeedback.length === 0 && !feedbackLoading && (
-            <div style={{ ...s.card, textAlign: "center" }}>
-              <p style={{ color: "#7fa8c9", fontSize: 13, margin: 0 }}>No feedback submitted yet.</p>
-            </div>
-          )}
-          {allFeedback.map((fb, i) => (
+          <h2 style={s.title}>Patient Feedback ⭐</h2>
+          <p style={s.subtitle}>{feedbackList.length} reviews · Avg {stats.avgRating} stars</p>
+          {feedbackList.length === 0 && <div style={s.card}><p style={{ color: "#7fa8c9", margin: 0 }}>No feedback yet.</p></div>}
+          {feedbackList.map((fb, i) => (
             <div key={i} style={{ ...s.card, borderLeft: "3px solid #f59e0b" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                <div>
-                  <p style={{ color: "#c9a84c", fontWeight: "bold", fontSize: 14, margin: "0 0 5px" }}>👤 {fb.patientName}</p>
-                  <Stars rating={fb.rating} />
-                  <p style={{ color: "#7fa8c9", fontSize: 11, margin: "4px 0 0" }}>Rating: {fb.rating}/5</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <p style={{ color: "#e8f4f8", fontWeight: "bold", fontSize: 14, margin: 0 }}>👤 {fb.patient_name}</p>
+                <div style={{ display: "flex", gap: 1 }}>
+                  {[1,2,3,4,5].map(star => (
+                    <span key={star} style={{ color: star <= fb.rating ? "#f59e0b" : "#1e3a5f", fontSize: 18 }}>★</span>
+                  ))}
                 </div>
-                <span style={{ color: "#7fa8c9", fontSize: 11 }}>
-                  {fb.submitted_at ? new Date(fb.submitted_at).toLocaleDateString() : ""}
-                </span>
               </div>
-              {fb.message ? (
-                <p style={{ color: "#e8f4f8", fontSize: 13, margin: "8px 0 0", lineHeight: 1.6, fontStyle: "italic", borderTop: "1px solid #1e3a5f", paddingTop: 8 }}>
-                  "{fb.message}"
-                </p>
-              ) : (
-                <p style={{ color: "#7fa8c9", fontSize: 12, margin: "8px 0 0", borderTop: "1px solid #1e3a5f", paddingTop: 8 }}>
-                  No written message.
-                </p>
-              )}
+              {fb.message && <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 6px", lineHeight: 1.5, fontStyle: "italic" }}>"{fb.message}"</p>}
+              {fb.created_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.created_at).toLocaleString()}</p>}
             </div>
           ))}
-          <button style={{ ...s.btn, marginTop: 8 }} onClick={fetchAllFeedback}>🔄 Refresh</button>
         </div>
       )}
 
-      {/* ── STATS ── */}
-      {screen === "stats" && (
+      {/* ── STATS TAB ── */}
+      {activeTab === "stats" && (
         <div style={s.page}>
-          <h2 style={s.title}>📊 Quick Stats</h2>
+          <h2 style={s.title}>Statistics 📊</h2>
           <p style={s.subtitle}>Overview of your practice</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-            {[
-              { label: "Total Appointments", value: appointments.length, color: "#c9a84c", icon: "📅" },
-              { label: "Seen", value: seenKeys.length, color: "#00c9a7", icon: "✅" },
-              { label: "Pending", value: appointments.filter(a => !isSeen(a)).length, color: "#ef4444", icon: "🔴" },
-              { label: "Unique Patients", value: patients.length, color: "#3b82f6", icon: "👥" },
-            ].map((stat, i) => (
-              <div key={i} style={{ ...s.card, textAlign: "center", borderTop: `3px solid ${stat.color}` }}>
-                <div style={{ fontSize: 28, marginBottom: 6 }}>{stat.icon}</div>
-                <div style={{ color: stat.color, fontSize: 28, fontWeight: "bold" }}>{stat.value}</div>
-                <div style={{ color: "#7fa8c9", fontSize: 11, marginTop: 4 }}>{stat.label}</div>
-              </div>
-            ))}
+          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+            <div style={s.statCard("#7c3aed")}>
+              <p style={{ color: "#7c3aed", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.appts}</p>
+              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Appointments</p>
+            </div>
+            <div style={s.statCard("#00c9a7")}>
+              <p style={{ color: "#00c9a7", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.patients}</p>
+              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Patients</p>
+            </div>
           </div>
-          <div style={{ ...s.card, borderLeft: "3px solid #c9a84c" }}>
-            <p style={{ color: "#c9a84c", fontSize: 11, fontWeight: "bold", marginBottom: 8 }}>VISIT TYPES BREAKDOWN</p>
-            {["First Consultation", "Follow-up", "Post-Procedure", "Emergency"].map(type => {
-              const count = appointments.filter(a => a.visit_type === type).length;
-              const pct = appointments.length ? Math.round((count / appointments.length) * 100) : 0;
-              return (
-                <div key={type} style={{ marginBottom: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "#e8f4f8", fontSize: 12 }}>{type}</span>
-                    <span style={{ color: "#c9a84c", fontSize: 12, fontWeight: "bold" }}>{count}</span>
-                  </div>
-                  <div style={{ background: "#1e3a5f", borderRadius: 4, height: 6 }}>
-                    <div style={{ background: "#c9a84c", width: pct + "%", height: "100%", borderRadius: 4 }} />
-                  </div>
-                </div>
-              );
-            })}
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={s.statCard("#f59e0b")}>
+              <p style={{ color: "#f59e0b", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.feedback}</p>
+              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Reviews</p>
+            </div>
+            <div style={s.statCard("#ef4444")}>
+              <p style={{ color: "#ef4444", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.avgRating}★</p>
+              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Avg Rating</p>
+            </div>
           </div>
-          <button style={{ ...s.btn, marginTop: 8 }} onClick={() => { fetchAppointments(); fetchPatients(); }}>🔄 Refresh Data</button>
         </div>
       )}
 
+      {/* ── SETTINGS TAB ── */}
+      {activeTab === "settings" && (
+        <div style={s.page}>
+          <h2 style={s.title}>Clinic Settings ⚙️</h2>
+          <p style={s.subtitle}>Changes sync to GastroDoc app instantly</p>
+          {[
+            { key: "doctor", label: "Doctor Name" },
+            { key: "quals", label: "Qualifications" },
+            { key: "clinic", label: "Clinic Name" },
+            { key: "address", label: "Address" },
+            { key: "phone", label: "Phone Number" },
+            { key: "timings", label: "Clinic Timings" },
+            { key: "holiday", label: "Holiday / Off Day" },
+            { key: "maps_link", label: "Google Maps Link" },
+          ].map(({ key, label }) => (
+            <div key={key}>
+              <label style={s.label}>{label}</label>
+              <input style={s.input} value={settings[key] || ""} onChange={e => setSettings(prev => ({ ...prev, [key]: e.target.value }))} />
+            </div>
+          ))}
+          <button style={s.btn} onClick={saveSettings}>{settingsSaved ? "✅ Saved!" : "💾 Save Settings"}</button>
+          <button style={s.btnOutline} onClick={handleLogout}>🚪 Logout</button>
+        </div>
+      )}
+
+      {/* ── BOTTOM NAV ── */}
       <div style={s.bottomNav}>
-        {navScreens.map(n => (
-          <button key={n.id} style={s.bottomBtn(screen === n.id)} onClick={() => setScreen(n.id)}>
-            <span style={{ fontSize: 18 }}>{n.icon}</span>{n.label}
+        {navTabs.map(tab => (
+          <button key={tab.id} style={s.bottomBtn(activeTab === tab.id)}
+            onClick={() => { setScreen("main"); setActiveTab(tab.id); }}>
+            <span style={{ fontSize: 18 }}>{tab.icon}</span>
+            {tab.label}
           </button>
         ))}
       </div>
