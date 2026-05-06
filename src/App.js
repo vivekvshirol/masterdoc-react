@@ -119,46 +119,44 @@ export default function App() {
   }, []);
 
   const fetchFeedback = useCallback(async () => {
-    const [{ data: fbData }, { data: profileData }, { data: apptUuidData }] = await Promise.all([
-      supabase.from("feedback").select("id, user_id, rating, message, created_at").order("created_at", { ascending: false }),
-      supabase.from("patient_profiles").select("user_id, phone"),
-      supabase.from("appointments").select("patient_name, phone, uuid"),
-    ]);
-    if (!fbData) return;
+  const [{ data: fbData }, { data: profileData }, { data: apptUuidData }] = await Promise.all([
+    supabase.from("feedback").select("id, user_id, rating, message, submitted_at").order("submitted_at", { ascending: false }),
+    supabase.from("patient_profiles").select("user_id, phone"),
+    supabase.from("appointments").select("patient_name, phone, uuid"),
+  ]);
+  if (!fbData) return;
 
-    const profileByUserId = {};
-    (profileData || []).forEach(p => { if (p.user_id) profileByUserId[p.user_id] = p.phone; });
+  const profileByUserId = {};
+  (profileData || []).forEach(p => { if (p.user_id) profileByUserId[p.user_id] = p.phone; });
 
-    const nameByPhone = {};
-    const nameByUuid = {};
-    (apptUuidData || []).forEach(a => {
-      if (a.phone && a.patient_name) nameByPhone[a.phone] = a.patient_name;
-      if (a.uuid && a.patient_name) nameByUuid[a.uuid] = a.patient_name;
-    });
+  const nameByPhone = {};
+  const nameByUuid = {};
+  (apptUuidData || []).forEach(a => {
+    if (a.phone && a.patient_name) nameByPhone[a.phone] = a.patient_name;
+    if (a.uuid && a.patient_name) nameByUuid[a.uuid] = a.patient_name;
+  });
 
-    const enriched = fbData.map(fb => {
-      let name = null;
-      if (fb.user_id && nameByUuid[fb.user_id]) name = nameByUuid[fb.user_id];
-      if (!name && fb.user_id && profileByUserId[fb.user_id]) {
-        name = nameByPhone[profileByUserId[fb.user_id]] || null;
-      }
-      return { ...fb, patient_name: name || "Unknown Patient" };
-    });
-    setFeedbackList(enriched);
-  }, []);
+  const enriched = fbData.map(fb => {
+    let name = null;
+    if (fb.user_id && nameByUuid[fb.user_id]) name = nameByUuid[fb.user_id];
+    if (!name && fb.user_id && profileByUserId[fb.user_id]) {
+      name = nameByPhone[profileByUserId[fb.user_id]] || null;
+    }
+    return { ...fb, patient_name: name || "Unknown Patient", created_at: fb.submitted_at };
+  });
+  setFeedbackList(enriched);
+}, []);
 
-  const fetchStats = useCallback(async () => {
-    const [{ data: appts }, { data: fb }, { data: prof }] = await Promise.all([
-      supabase.from("appointments").select("patient_name"),
-      supabase.from("feedback").select("rating"),
-      supabase.from("patient_profiles").select("user_id"),
-    ]);
-    const apptCount = appts?.length || 0;
-    const patCount = prof?.length || 0;
-    const fbCount = fb?.length || 0;
-    const avgRating = fbCount > 0 ? (fb.reduce((s, f) => s + (f.rating || 0), 0) / fbCount).toFixed(1) : "—";
-    setStats({ appts: apptCount, patients: patCount, feedback: fbCount, avgRating });
-  }, []);
+const fetchStats = useCallback(async () => {
+  const [{ data: appts }, { data: fb }] = await Promise.all([
+    supabase.from("appointments").select("patient_name"),
+    supabase.from("feedback").select("rating"),
+  ]);
+  const apptCount = appts?.length || 0;
+  const fbCount = fb?.length || 0;
+  const avgRating = fbCount > 0 ? (fb.reduce((s, f) => s + (f.rating || 0), 0) / fbCount).toFixed(1) : "—";
+  setStats({ appts: apptCount, feedback: fbCount, avgRating });
+}, []);
 
   const fetchSettings = useCallback(async () => {
     const { data } = await supabase.from("clinic_settings").select("key, value");
