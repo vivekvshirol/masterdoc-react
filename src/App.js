@@ -163,29 +163,28 @@ export default function App() {
 
   // ── Fetch appointments ────────────────────────────────────────────────────
   const fetchAppointments = useCallback(async () => {
-    const { data } = await supabase
-      .from("appointments")
-      .select("patient_name, phone, date, visit_type, uuid, created_at")
-      .order("created_at", { ascending: false });
-    if (data) setAppointments(data);
-  }, []);
-
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("patient_name, phone, date, visit_type, uuid, Created_at")
+    .order("date", { ascending: false });
+  if (data) setAppointments(data);
+}, []);
+  
   // ── Fetch patients (deduplicated from appointments by phone) ──────────────
   const fetchPatients = useCallback(async () => {
-    const { data } = await supabase
-      .from("appointments")
-      .select("patient_name, phone, uuid")
-      .order("created_at", { ascending: false });
-    if (!data) return;
-    // Deduplicate by phone — keep first occurrence (most recent)
-    const seen = new Set();
-    const unique = [];
-    for (const row of data) {
-      const key = row.phone || row.uuid || row.patient_name;
-      if (!seen.has(key)) { seen.add(key); unique.push(row); }
-    }
-    setPatients(unique);
-  }, []);
+  const { data } = await supabase
+    .from("appointments")
+    .select("patient_name, phone, uuid")
+    .order("date", { ascending: false });
+  if (!data) return;
+  const seen = new Set();
+  const unique = [];
+  for (const row of data) {
+    const key = row.phone || row.uuid || row.patient_name;
+    if (!seen.has(key)) { seen.add(key); unique.push(row); }
+  }
+  setPatients(unique);
+}, []);
 
   // ── Fetch feedback with names ─────────────────────────────────────────────
   const fetchFeedback = useCallback(async () => {
