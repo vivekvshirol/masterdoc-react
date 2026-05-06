@@ -206,34 +206,34 @@ const fetchStats = useCallback(async () => {
   };
 
   // ── Open patient detail ───────────────────────────────────────────────────
-  const openPatient = async (patient) => {
-    setSelectedPatient(patient);
-    setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
-    setPatientTab("bristol");
-    setScreen("patientDetail");
-    setLoadingPatient(true);
+const openPatient = async (patient) => {
+  setSelectedPatient(patient);
+  setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
+  setPatientTab("bristol");
+  setScreen("patientDetail");
+  setLoadingPatient(true);
 
-    let userId = patient.uuid || null;
-    if (!userId && patient.phone) {
-      const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", patient.phone).single();
-      userId = prof?.user_id || null;
-    }
+  let userId = patient.uuid || null;
+  if (!userId && patient.phone) {
+    const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", patient.phone).single();
+    userId = prof?.user_id || null;
+  }
 
-    const { data: appts } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, Created_at").eq("phone", patient.phone).order("date", { ascending: false });
-    setPatientAppts(appts || []);
+  const { data: appts } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, Created_at").eq("phone", patient.phone).order("date", { ascending: false });
+  setPatientAppts(appts || []);
 
-    if (userId) {
-      const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
-        supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
-        supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
-        supabase.from("feedback").select("rating, message, created_at").eq("user_id", userId).order("created_at", { ascending: false }),
-      ]);
-      setPatientBristol(bristol || []);
-      setPatientSymptoms(symptoms || []);
-      setPatientFeedback(feedback || []);
-    }
-    setLoadingPatient(false);
-  };
+  if (userId) {
+    const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
+      supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
+      supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
+      supabase.from("feedback").select("rating, message, submitted_at").eq("user_id", userId).order("submitted_at", { ascending: false }),
+    ]);
+    setPatientBristol(bristol || []);
+    setPatientSymptoms(symptoms || []);
+    setPatientFeedback(feedback || []);
+  }
+  setLoadingPatient(false);
+};
 
   // ── Save settings ─────────────────────────────────────────────────────────
   const saveSettings = async () => {
@@ -397,7 +397,7 @@ const fetchStats = useCallback(async () => {
                     <span style={{ color: "#f59e0b", fontWeight: "bold", fontSize: 14, marginLeft: 6 }}>{fb.rating}/5</span>
                   </div>
                   {fb.message && <p style={{ color: "#e8f4f8", fontSize: 13, margin: "0 0 4px", lineHeight: 1.5 }}>"{fb.message}"</p>}
-                  {fb.created_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.created_at).toLocaleString()}</p>}
+                    {fb.submitted_at && <p style={{ color: "#7fa8c9", fontSize: 10, margin: 0 }}>{new Date(fb.submitted_at).toLocaleString()}</p>}
                 </div>
               ))
           )}
@@ -492,32 +492,26 @@ const fetchStats = useCallback(async () => {
         </div>
       )}
 
-      {activeTab === "stats" && (
-        <div style={s.page}>
-          <h2 style={s.title}>Statistics 📊</h2>
-          <p style={s.subtitle}>Overview of your practice</p>
-          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-            <div style={s.statCard("#7c3aed")}>
-              <p style={{ color: "#7c3aed", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.appts}</p>
-              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Appointments</p>
-            </div>
-            <div style={s.statCard("#00c9a7")}>
-              <p style={{ color: "#00c9a7", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.patients}</p>
-              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Patients</p>
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={s.statCard("#f59e0b")}>
-              <p style={{ color: "#f59e0b", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.feedback}</p>
-              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Reviews</p>
-            </div>
-            <div style={s.statCard("#ef4444")}>
-              <p style={{ color: "#ef4444", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.avgRating}★</p>
-              <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Avg Rating</p>
-            </div>
-          </div>
-        </div>
-      )}
+{activeTab === "stats" && (
+  <div style={s.page}>
+    <h2 style={s.title}>Statistics 📊</h2>
+    <p style={s.subtitle}>Overview of your practice</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={s.statCard("#7c3aed")}>
+        <p style={{ color: "#7c3aed", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.appts}</p>
+        <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Appointments</p>
+      </div>
+      <div style={s.statCard("#f59e0b")}>
+        <p style={{ color: "#f59e0b", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.feedback}</p>
+        <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Reviews</p>
+      </div>
+      <div style={s.statCard("#ef4444")}>
+        <p style={{ color: "#ef4444", fontSize: 28, fontWeight: "bold", margin: "0 0 4px" }}>{stats.avgRating}★</p>
+        <p style={{ color: "#7fa8c9", fontSize: 11, margin: 0 }}>Avg Rating</p>
+      </div>
+    </div>
+  </div>
+)}
 
       {activeTab === "settings" && (
         <div style={s.page}>
