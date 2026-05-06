@@ -253,29 +253,58 @@ export default function App() {
   };
 
   // ── Open patient detail ───────────────────────────────────────────────────
-  const openPatient = async (patient) => {
-    setSelectedPatient(patient);
-    setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
-    setPatientTab("bristol"); setScreen("patientDetail"); setLoadingPatient(true);
-    let userId = patient.uuid || null;
-    if (!userId && patient.phone) {
-      const { data: prof } = await supabase.from("patient_profiles").select("user_id").eq("phone", patient.phone).single();
-      userId = prof?.user_id || null;
-    }
-    const { data: appts } = await supabase.from("appointments").select("patient_name, phone, date, visit_type, Created_at").eq("phone", patient.phone).order("date", { ascending: false });
-    setPatientAppts(appts || []);
-    if (userId) {
-      const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
-        supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
-        supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
-        supabase.from("feedback").select("rating, message, submitted_at").eq("user_id", userId).order("submitted_at", { ascending: false }),
-      ]);
-      setPatientBristol(bristol || []);
-      setPatientSymptoms(symptoms || []);
-      setPatientFeedback(feedback || []);
-    }
-    setLoadingPatient(false);
-  };
+const openPatient = async (patient) => {
+  setSelectedPatient(patient);
+  setPatientBristol([]); setPatientSymptoms([]); setPatientFeedback([]); setPatientAppts([]);
+  setPatientTab("bristol"); setScreen("patientDetail"); setLoadingPatient(true);
+
+  // Step 1: Try uuid directly from patient object
+  let userId = patient.uuid || null;
+
+  // Step 2: If no uuid, look up patient_profiles by phone
+  if (!userId && patient.phone) {
+    const { data: prof } = await supabase
+      .from("patient_profiles")
+      .select("user_id")
+      .eq("phone", patient.phone)
+      .single();
+    userId = prof?.user_id || null;
+  }
+
+  // Step 3: If still no userId, search appointments by phone to find uuid
+  if (!userId && patient.phone) {
+    const { data: apptMatch } = await supabase
+      .from("appointments")
+      .select("uuid")
+      .eq("phone", patient.phone)
+      .not("uuid", "is", null)
+      .limit(1)
+      .single();
+    userId = apptMatch?.uuid || null;
+  }
+
+  // Fetch all appointments for this patient by phone
+  const { data: appts } = await supabase
+    .from("appointments")
+    .select("patient_name, phone, date, visit_type, Created_at")
+    .eq("phone", patient.phone)
+    .order("date", { ascending: false });
+  setPatientAppts(appts || []);
+
+  // Fetch logs only if we have a userId
+  if (userId) {
+    const [{ data: bristol }, { data: symptoms }, { data: feedback }] = await Promise.all([
+      supabase.from("bristol_logs").select("stool_type, tag, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(30),
+      supabase.from("symptom_logs").select("symptoms, logged_at").eq("user_id", userId).order("logged_at", { ascending: false }).limit(20),
+      supabase.from("feedback").select("rating, message, submitted_at").eq("user_id", userId).order("submitted_at", { ascending: false }),
+    ]);
+    setPatientBristol(bristol || []);
+    setPatientSymptoms(symptoms || []);
+    setPatientFeedback(feedback || []);
+  }
+
+  setLoadingPatient(false);
+};
 
   const saveSettings = async () => {
     const entries = Object.entries(settings).map(([key, value]) => ({ key, value }));
